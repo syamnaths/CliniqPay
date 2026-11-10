@@ -1,0 +1,2462 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ hospital.name }} — Quick Billing Counter</title>
+  <link rel="icon" type="image/png" href="{% static 'images/original-icon-mark.png' %}"/>
+  <script src="{% static 'vendor/tailwind.min.js' %}"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  {% include 'includes/theme_head.html' %}
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-['Inter'] min-h-screen transition-colors">
+  <!-- Top Cashier Header -->
+  <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-xs transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 lg:py-0 lg:h-16 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 lg:gap-4">
+      
+      <!-- Top Row on Mobile & Tablet / Left on Desktop: Hospital Brand, Tier & Details -->
+      <div class="flex items-center justify-between lg:justify-start gap-3 w-full lg:w-auto min-w-0">
+        <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <!-- Hospital Brand Logo & System Link -->
+          <a href="{% url 'billing:counter' hospital.slug %}" class="flex items-center gap-2.5 shrink-0">
+            {% if hospital.logo %}
+            <div class="w-9 h-9 sm:w-10 sm:h-10 p-1 bg-white dark:bg-white/10 dark:backdrop-blur-xs rounded-xl border border-slate-200 dark:border-slate-700/80 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+              <img src="{{ hospital.logo.url }}" alt="{{ hospital.name }} Logo" class="w-full h-full rounded-lg object-contain">
+            </div>
+            {% else %}
+            <!-- Mobile: Mark icon only -->
+            <img src="{% static 'images/original-icon-mark.png' %}" alt="Cliniqpay Logo" class="h-8 w-auto object-contain sm:hidden"/>
+            <!-- Tablet & Desktop: Full stacked logo -->
+            <img src="{% static 'images/original-staked.png' %}" alt="Cliniqpay Logo" class="hidden sm:inline-block h-9 w-auto object-contain"/>
+            {% endif %}
+          </a>
+          <div class="h-6 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block shrink-0"></div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 sm:gap-2">
+              <span class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white font-['Plus_Jakarta_Sans'] leading-tight truncate">{{ hospital.name }} · POS Counter</span>
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase shrink-0
+                {% if hospital.plan_tier == 'enterprise' %}
+                  bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800
+                {% elif hospital.plan_tier == 'starter' %}
+                  bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800
+                {% else %}
+                  bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300 border border-teal-200 dark:border-teal-800
+                {% endif %}">
+                <span class="w-1.5 h-1.5 rounded-full {% if hospital.plan_tier == 'enterprise' %}bg-purple-500{% elif hospital.plan_tier == 'starter' %}bg-amber-500{% else %}bg-teal-500{% endif %}"></span>
+                {{ hospital.get_plan_tier_display }}
+              </span>
+            </div>
+            <div class="flex items-center gap-1.5 sm:gap-2 text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate mt-0.5">
+              <span>Biller: <a href="{% url 'setup_hospital:user_profile' hospital.slug %}" class="text-teal-700 dark:text-teal-400 hover:underline font-semibold inline-flex items-center gap-0.5"><span>{{ biller_name|default:request.user.username }}</span></a>
+                <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider
+                  {% if staff_role == 'admin' %}bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800
+                  {% elif staff_role == 'pharmacist' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800
+                  {% elif staff_role == 'housekeeping' %}bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800
+                  {% else %}bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700{% endif %}">
+                  {{ staff_role|default:'cashier' }}
+                </span>
+              </span>
+              <span>·</span>
+              <span>Next: <strong class="text-teal-700 dark:text-teal-400 font-mono">{{ next_serial }}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile & Tablet Quick Actions (Theme Toggle & Sign Out) -->
+        <div class="flex items-center gap-1.5 lg:hidden shrink-0">
+          {% include 'includes/theme_toggle_btn.html' %}
+          <a href="{% url 'setup_hospital:logout' hospital.slug %}" class="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-rose-600" title="Sign Out">
+            <span class="material-symbols-outlined text-[18px]">logout</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Action Navigation CTAs (Smooth horizontal scroll on mobile & tablet) -->
+      <div class="flex items-center gap-1.5 sm:gap-2 w-full lg:w-auto overflow-x-auto no-scrollbar py-0.5 lg:py-0 shrink-0">
+        <div class="hidden lg:flex items-center">
+          {% include 'includes/theme_toggle_btn.html' %}
+        </div>
+
+        <!-- Permanent Counter Display Link for Tablet / Second Screen -->
+        <a href="{% url 'payments:counter_display' hospital.slug %}{% if hospital.display_token %}?token={{ hospital.display_token }}{% endif %}" target="_blank" class="px-2.5 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 text-xs font-semibold flex items-center gap-1 transition shrink-0" title="Launch Patient Counter Display">
+          <span class="material-symbols-outlined text-[16px] text-teal-600 dark:text-teal-400">tablet_mac</span>
+          <span>Counter QR</span>
+        </a>
+        
+        <!-- Hospital Settings -->
+        <a href="{% url 'setup_hospital:dashboard' hospital.slug %}" class="px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition shrink-0" title="Hospital Setup & Tariffs">
+          <span class="material-symbols-outlined text-[16px]">tune</span>
+          <span>Settings</span>
+        </a>
+
+        <div class="h-5 w-px bg-slate-200 dark:bg-slate-800 mx-0.5 hidden sm:block shrink-0"></div>
+
+        <a href="{% url 'setup_hospital:help_guide' hospital.slug %}" class="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium flex items-center gap-1 transition shrink-0" title="User Guide & System Knowledge Base">
+          <span class="material-symbols-outlined text-[16px] text-slate-500">help</span>
+          <span>Guide</span>
+        </a>
+
+        <a href="{% url 'setup_hospital:support' hospital.slug %}" class="px-2.5 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 text-xs font-semibold flex items-center gap-1 transition shrink-0" title="Get Help & Submit Ticket">
+          <span class="material-symbols-outlined text-[16px]">support_agent</span>
+          <span>Support</span>
+        </a>
+
+        <!-- Cashier / Biller Profile CTA -->
+        <a href="{% url 'setup_hospital:user_profile' hospital.slug %}" class="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium flex items-center gap-1 transition shrink-0" title="My Profile & Security">
+          <span class="material-symbols-outlined text-[16px]">person</span>
+          <span class="hidden sm:inline">Profile</span>
+        </a>
+
+        <a href="{% url 'setup_hospital:logout' hospital.slug %}" class="hidden lg:inline-flex px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 text-xs font-medium text-slate-700 dark:text-slate-200 transition shrink-0" title="Sign Out">
+          Sign Out
+        </a>
+      </div>
+    </div>
+  </header>
+
+        <a href="{% url 'setup_hospital:logout' hospital.slug %}" class="hidden md:inline-flex px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 text-xs font-medium text-slate-700 dark:text-slate-200 transition shrink-0" title="Sign Out">
+          Sign Out
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- LEFT 7 COLS: Quick Billing Form -->
+      <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+          <div>
+            <h1 class="text-xl font-bold font-['Plus_Jakarta_Sans'] text-slate-900">Quick Billing Counter</h1>
+            <p class="text-xs text-slate-500">10-second OPD / IPD invoice creation</p>
+          </div>
+          <span class="px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 font-mono font-bold text-xs">
+            {{ next_serial }}
+          </span>
+        </div>
+
+        <form id="billingForm" action="{% url 'billing:create_bill' hospital.slug %}" method="POST" class="space-y-6" onsubmit="return validateBillingForm(event)">
+          {% csrf_token %}
+          
+          <!-- Validation Alert Banner -->
+          <div id="formValidationError" class="hidden p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2.5 text-rose-700 text-xs font-semibold animate-pulse">
+            <span class="material-symbols-outlined text-[18px]">error</span>
+            <span id="formValidationMsg">Please complete all required fields.</span>
+          </div>
+          
+          <!-- Patient Details -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="text-xs font-semibold uppercase text-slate-500 tracking-wider">1. Patient Information *</h2>
+              <span id="patientStatusPill" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"></span>
+            </div>
+
+            <!-- Instant Patient Search Box (Global Lookup by Name, Phone, or ID) -->
+            <div class="mb-3.5 relative">
+              <label for="patientLookupInput" class="block text-[11px] font-semibold text-teal-800 mb-1 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-teal-600 text-[15px]">search</span>
+                <span>Search Existing Patient Record</span>
+                <span class="text-[10px] text-slate-400 font-normal">(by Name, Phone, or Patient ID)</span>
+              </label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">person_search</span>
+                <input type="text" id="patientLookupInput" autocomplete="off" placeholder="Type patient name, 10-digit mobile number, or UHID..." class="w-full pl-9 pr-9 py-2.5 bg-teal-50/30 hover:bg-teal-50/50 border border-teal-200 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white shadow-2xs transition">
+                <span id="patientLookupSearchingIcon" class="hidden material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-teal-600 animate-spin pointer-events-none">progress_activity</span>
+              </div>
+
+              <!-- Dedicated Instant Search Dropdown -->
+              <div id="patientLookupDropdown" class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-40 max-h-64 overflow-y-auto divide-y divide-slate-100">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 relative">
+              <div class="relative">
+                <label class="block text-xs font-medium text-slate-700 mb-1">Patient Full Name *</label>
+                <div class="relative">
+                  <input type="text" id="patientNameInput" name="patient_name" required autocomplete="off" placeholder="e.g. Ananthu Krishna" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-teal-500 focus:bg-white transition">
+                  <span id="patientSearchingIcon" class="hidden material-symbols-outlined absolute right-2.5 top-2.5 text-[18px] text-teal-600 animate-spin pointer-events-none">progress_activity</span>
+                </div>
+                <p id="patientNameError" class="hidden text-[11px] text-rose-600 font-medium mt-1">Please enter patient name.</p>
+                
+                <!-- Patient Autocomplete Dropdown on Name field -->
+                <div id="patientDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-30 max-h-56 overflow-y-auto divide-y divide-slate-100">
+                </div>
+              </div>
+              <div class="relative">
+                <label class="block text-xs font-medium text-slate-700 mb-1">WhatsApp Phone (10 digits) *</label>
+                <div class="relative">
+                  <input type="tel" id="patientPhoneInput" name="patient_phone" required pattern="[0-9]{10}" maxlength="10" placeholder="9876543210" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-teal-500 focus:bg-white transition">
+                  <span id="patientIdBadge" class="hidden absolute right-2.5 top-2.5 px-2 py-0.5 bg-teal-50 border border-teal-200 rounded text-[10px] font-mono font-bold text-teal-800" title="Patient ID / UHID"></span>
+                </div>
+                <p id="patientPhoneError" class="hidden text-[11px] text-rose-600 font-medium mt-1">Please enter a valid 10-digit mobile number.</p>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">Age</label>
+                <input type="number" id="patientAgeInput" name="patient_age" placeholder="Age" min="0" max="130" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-teal-500 focus:bg-white transition">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Gender</label>
+                <div class="relative">
+                  <select id="patientGenderSelect" name="patient_gender" class="w-full appearance-none px-3.5 py-2.5 pr-9 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-teal-500 focus:bg-white dark:focus:bg-slate-800 transition">
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                    <option value="O">Other</option>
+                  </select>
+                  <span class="material-symbols-outlined absolute right-2.5 top-3 text-[18px] text-slate-400 pointer-events-none">expand_more</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Inpatient (IPD) Admission Toggle & Room Details (Only available for Standard and Enterprise Plans) -->
+            {% if hospital.plan_tier != 'starter' %}
+            <div class="mt-3.5 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-purple-50/50 p-3 rounded-xl border border-purple-100">
+              <div class="flex items-center gap-2.5">
+                <input type="checkbox" id="inpatientCheckbox" name="is_inpatient" value="1" class="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500" onchange="toggleInpatientModal(this)">
+                <div>
+                  <label for="inpatientCheckbox" class="text-xs font-bold text-purple-900 cursor-pointer flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[16px] text-purple-700">hotel</span>
+                    <span>Admit / Bill as Inpatient (IPD)</span>
+                  </label>
+                  <p class="text-[11px] text-purple-700/80">Marks patient as admitted with bed assignment & running stay ledger</p>
+                </div>
+              </div>
+              
+              <div id="roomBedInputWrapper" class="hidden flex flex-wrap items-center gap-2">
+                <!-- Admission Date display before Bed/Room -->
+                <div id="admissionDateBadgeWrapper" class="hidden items-center gap-1 px-2.5 py-1 bg-purple-100/70 border border-purple-200 text-purple-900 rounded-lg text-xs font-semibold">
+                  <span class="material-symbols-outlined text-[15px] text-purple-700">calendar_today</span>
+                  <span>Admitted: <strong id="patientAdmissionDateDisplay" class="font-bold text-purple-950">-</strong></span>
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                  <label class="text-[11px] font-semibold text-purple-900">Bed/Room:</label>
+                  <input type="text" id="roomBedNumberInput" name="room_bed_number" placeholder="e.g. Room 204 or ICU-1" class="px-2.5 py-1 bg-white border border-purple-200 rounded-lg text-xs font-bold text-purple-950 focus:outline-none focus:ring-1 focus:ring-purple-500 w-32">
+                </div>
+                
+                <!-- Room Change CTA button -->
+                <button type="button" id="roomChangeBtn" onclick="openRoomChangeModal()" class="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm" title="Change patient room/bed and update tariff">
+                  <span class="material-symbols-outlined text-[14px]">swap_horiz</span>
+                  <span>Room Change</span>
+                </button>
+
+                <button type="button" id="dischargeBtn" onclick="openDischargeModal()" class="hidden px-2.5 py-1 bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">logout</span>
+                  <span>Discharge</span>
+                </button>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Doctor Selection (Searchable Consulting Doctor Dropdown) -->
+          <div class="relative">
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="text-xs font-semibold uppercase text-slate-500 tracking-wider">2. Consulting Doctor</h2>
+              <span class="text-[10px] text-slate-400">Search by doctor name or specialty</span>
+            </div>
+            
+            <!-- Hidden Input to store chosen doctor ID for form submit -->
+            <input type="hidden" name="doctor_id" id="selectedDoctorId" value="">
+
+            <!-- Searchable Doctor Trigger / Search Input -->
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">stethoscope</span>
+              <input type="text" id="doctorSearchInput" autocomplete="off" onfocus="openDoctorDropdown()" oninput="filterDoctorOptions()" onkeydown="handleDoctorSearchKeydown(event)" placeholder="Search or select doctor (e.g. Dr. Menon, Cardiologist)..." class="w-full pl-9 pr-9 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white dark:focus:bg-slate-800 transition cursor-pointer">
+              <button type="button" onclick="toggleDoctorDropdown()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5">
+                <span class="material-symbols-outlined text-[18px] pointer-events-none" id="doctorDropdownChevron">expand_more</span>
+              </button>
+            </div>
+
+            <!-- Doctor Options Dropdown List -->
+            <div id="doctorOptionsDropdown" class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 max-h-56 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
+              <div onclick="selectDoctor('', 'No Doctor Assigned', '')" class="px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer text-xs text-slate-500 italic">
+                -- No Consulting Doctor / General Counter --
+              </div>
+              {% for doc in doctors %}
+              <div onclick="selectDoctor('{{ doc.id }}', '{{ doc.full_name|escapejs }}', '{{ doc.specialization|escapejs }}')" class="doctor-dropdown-item px-3.5 py-2.5 hover:bg-teal-50/70 dark:hover:bg-teal-950/40 cursor-pointer flex items-center justify-between text-xs transition" data-search="{{ doc.full_name|lower }} {{ doc.specialization|lower }}">
+                <div>
+                  <div class="font-bold text-slate-800 dark:text-slate-200">{{ doc.full_name }}</div>
+                  <div class="text-[11px] text-teal-700 dark:text-teal-400 font-medium">{{ doc.specialization }}</div>
+                </div>
+                <span class="material-symbols-outlined text-slate-300 dark:text-slate-600 text-[16px]">check</span>
+              </div>
+              {% empty %}
+              <div class="px-3.5 py-3 text-center text-xs text-slate-400">
+                No doctors configured in settings.
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Service / Procedure Selection with Department Filtering & Instant Search -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="text-xs font-semibold uppercase text-slate-500 tracking-wider">3. Services & Procedures (Select All Applicable)</h2>
+              <span class="text-[11px] text-teal-600 font-semibold" id="selectedServicesCount">0 selected</span>
+            </div>
+
+            <!-- Department Filter Tabs & Search Bar -->
+            <div class="space-y-2 mb-2">
+              <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                <button type="button" onclick="filterServicesDept('all')" class="dept-tab px-2.5 py-1 rounded-lg font-semibold bg-teal-600 text-white transition shrink-0" data-dept="all">All Items ({{ services|length }})</button>
+                {% if 'opd' in available_departments %}
+                <button type="button" onclick="filterServicesDept('opd')" class="dept-tab px-2.5 py-1 rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0" data-dept="opd">OPD</button>
+                {% endif %}
+                {% if 'pharmacy' in available_departments %}
+                <button type="button" onclick="filterServicesDept('pharmacy')" class="dept-tab px-2.5 py-1 rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0" data-dept="pharmacy">{% if hospital.tier == 'starter' %}Pharmacy-Lite (OTC){% else %}Pharmacy{% endif %}</button>
+                {% endif %}
+                {% if 'lab' in available_departments %}
+                <button type="button" onclick="filterServicesDept('lab')" class="dept-tab px-2.5 py-1 rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0" data-dept="lab">Lab</button>
+                {% endif %}
+                {% if 'radiology' in available_departments %}
+                <button type="button" onclick="filterServicesDept('radiology')" class="dept-tab px-2.5 py-1 rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0" data-dept="radiology">Radiology</button>
+                {% endif %}
+                {% if 'ipd' in available_departments %}
+                <button type="button" onclick="filterServicesDept('ipd')" class="dept-tab px-2.5 py-1 rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0" data-dept="ipd">IPD / Observation</button>
+                {% endif %}
+                {% if 'emergency' in available_departments %}
+                <button type="button" onclick="filterServicesDept('emergency')" class="dept-tab px-2.5 py-1 rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0" data-dept="emergency">Emergency</button>
+                {% endif %}
+                {% if 'ot_surgery' in available_departments %}
+                <button type="button" onclick="filterServicesDept('ot_surgery')" class="dept-tab px-2.5 py-1 rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0" data-dept="ot_surgery">OT & Surgery</button>
+                {% endif %}
+                {% if 'misc' in available_departments %}
+                <button type="button" onclick="filterServicesDept('misc')" class="dept-tab px-2.5 py-1 rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0" data-dept="misc">Miscellaneous & Ad-Hoc</button>
+                {% endif %}
+              </div>
+
+              <!-- Instant Tariff Search Bar -->
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                <input type="text" id="counterTariffSearch" oninput="filterServicesBySearch()" placeholder="Search tariff, code, medicine, bed type..." class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:bg-white transition">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto p-1" id="servicesGrid">
+              {% for s in services %}
+              <div class="service-item-card flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-teal-500 hover:bg-teal-50/20 dark:hover:bg-teal-950/20 transition"
+                   data-dept="{{ s.department|default:'opd' }}"
+                   data-search="{{ s.name|lower }} {{ s.code|lower }} {{ s.department|lower }} {{ s.get_billing_unit_display|lower }}">
+                <label class="flex items-center gap-2.5 min-w-0 cursor-pointer flex-1 mr-2" for="srv_{{ s.id }}">
+                  <input type="checkbox" name="services" value="{{ s.id }}" id="srv_{{ s.id }}" class="w-4 h-4 text-teal-600 rounded border-slate-300 focus:ring-teal-500 service-checkbox shrink-0" data-price="{{ s.price }}" onchange="handleServiceCheck('{{ s.id }}')">
+                  <div class="min-w-0">
+                    <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{{ s.name }}</div>
+                    <div class="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono mt-0.5">
+                      <span class="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 uppercase font-sans font-semibold">{{ s.get_department_display }}</span>
+                      <span>{{ s.code }}</span>
+                      <span class="text-slate-500 font-bold font-mono">₹{{ s.price }}/{{ s.unit_short_label }}</span>
+                    </div>
+                  </div>
+                </label>
+                
+                <!-- Intelligent Unit Stepper (adapts to hours, days, sessions, tests, or visits) -->
+                <div class="flex items-center gap-1 shrink-0 bg-slate-100 dark:bg-slate-800 px-1.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700" title="Billed per {{ s.get_billing_unit_display }}">
+                  <span class="text-[10px] font-bold text-teal-700 dark:text-teal-400 uppercase font-mono">{{ s.unit_short_label }}</span>
+                  <input type="number" name="qty_{{ s.id }}" id="qty_{{ s.id }}" min="1" max="999" value="1" class="w-10 text-center bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-xs font-bold font-mono text-slate-800 dark:text-slate-100 py-0.5 focus:outline-none focus:ring-1 focus:ring-teal-500">
+                </div>
+              </div>
+              {% empty %}
+              <div class="col-span-2 py-4 text-center text-xs text-slate-400">
+                No services added yet. Add tariffs in hospital settings.
+              </div>
+              {% endfor %}
+            </div>
+
+            <!-- Custom / Ad-Hoc Miscellaneous Charge Entry (For Unforeseen / Unknown Hospital Fees) -->
+            <div class="mt-3.5 p-3.5 rounded-2xl bg-gradient-to-r from-teal-50/70 via-slate-50 to-teal-50/30 dark:from-slate-800/80 dark:to-slate-800/40 border border-teal-200/90 dark:border-teal-900 shadow-2xs">
+              <div class="flex items-center justify-between cursor-pointer select-none" onclick="toggleCustomChargePanel()">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-lg bg-teal-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    <span class="material-symbols-outlined text-[16px]">add_circle</span>
+                  </div>
+                  <div>
+                    <h3 class="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                      <span>Add Custom / Miscellaneous Charge</span>
+                      <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase tracking-wide bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 border border-teal-300 dark:border-teal-800">Ad-Hoc Fee</span>
+                    </h3>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400">Add arbitrary or unforeseen charges (e.g. oxygen kit, attendant pass, extra linen, medical certificate)</p>
+                  </div>
+                </div>
+                <button type="button" class="text-teal-700 dark:text-teal-400 hover:text-teal-900 font-semibold text-xs flex items-center gap-0.5 p-1">
+                  <span id="customChargeChevron" class="material-symbols-outlined text-[20px] transition-transform">expand_more</span>
+                </button>
+              </div>
+
+              <!-- Collapsible Input Fields -->
+              <div id="customChargeFields" class="hidden mt-3 pt-3 border-t border-teal-100 dark:border-slate-700/80 space-y-2.5">
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs">
+                  <div class="sm:col-span-5">
+                    <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Charge Description / Procedure *</label>
+                    <input type="text" name="custom_item_name" id="customItemName" oninput="onCustomChargeChanged()" placeholder="e.g. Emergency Suture Kit, Attendant Linen..." class="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500">
+                  </div>
+                  <div class="sm:col-span-3">
+                    <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Amount (₹) *</label>
+                    <input type="number" step="0.01" name="custom_item_price" id="customItemPrice" oninput="onCustomChargeChanged()" placeholder="0.00" class="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500">
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Qty</label>
+                    <input type="number" min="1" max="99" value="1" name="custom_item_qty" id="customItemQty" oninput="onCustomChargeChanged()" class="w-full px-2 py-1.5 text-center bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500">
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">GST %</label>
+                    <input type="number" step="0.01" name="custom_item_tax" id="customItemTax" value="{{ hospital.default_tax_percent|default:'0.00' }}" oninput="onCustomChargeChanged()" class="w-full px-2 py-1.5 text-center bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500">
+                  </div>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                  <span class="italic text-teal-800 dark:text-teal-300 font-medium flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">info</span>
+                    <span>Usable by Cashier, Front Desk & Hospital Admin for any unforeseen fees</span>
+                  </span>
+                  <button type="button" onclick="clearCustomCharge()" class="text-rose-600 hover:text-rose-700 hover:underline font-semibold flex items-center gap-0.5">
+                    <span class="material-symbols-outlined text-[13px]">clear</span>
+                    <span>Clear Charge</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <p id="servicesSelectionError" class="hidden text-[11px] text-rose-600 font-medium mt-2 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[15px]">warning</span>
+              Please select at least one service, procedure, or tariff item to bill.
+            </p>
+          </div>
+
+          <!-- Running Inpatient (IPD) Summary Card (Rendered for Admitted Inpatients in Standard/Enterprise Plans) -->
+          {% if hospital.plan_tier != 'starter' %}
+          <div id="inpatientSummaryCard" class="hidden p-4 rounded-2xl bg-purple-50/70 border border-purple-200 text-xs space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-purple-200/80">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-purple-700 text-[18px]">account_balance_wallet</span>
+                <span class="font-bold text-purple-950">Active Inpatient Stay Account</span>
+                <span id="ipdRoomBadge" class="px-2 py-0.5 rounded bg-purple-200/80 text-purple-900 font-mono font-bold text-[10px]"></span>
+              </div>
+              <span id="ipdAdmitDateBadge" class="text-[11px] text-purple-700 font-medium"></span>
+            </div>
+
+            <!-- Financial Metrics -->
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div class="bg-white p-2.5 rounded-xl border border-purple-100">
+                <span class="text-[10px] text-slate-500 uppercase block font-semibold">Total Incurred</span>
+                <span id="ipdTotalBilled" class="text-sm font-bold font-mono text-slate-900">₹0.00</span>
+              </div>
+              <div class="bg-white p-2.5 rounded-xl border border-purple-100">
+                <span class="text-[10px] text-emerald-600 uppercase block font-semibold">Paid to Date</span>
+                <span id="ipdTotalPaid" class="text-sm font-bold font-mono text-emerald-700">₹0.00</span>
+              </div>
+              <div class="bg-white p-2.5 rounded-xl border border-purple-100">
+                <span class="text-[10px] text-rose-600 uppercase block font-semibold">Outstanding Due</span>
+                <span id="ipdOutstanding" class="text-sm font-bold font-mono text-rose-700">₹0.00</span>
+              </div>
+            </div>
+
+            <!-- Visit / Interim Bills List -->
+            <div>
+              <span class="text-[11px] font-bold text-purple-900 block mb-1.5">Admission Invoices & Stay Receipts:</span>
+              <div id="ipdBillsList" class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Action Buttons: Save Patient Only (when no services selected) OR Generate Bill & Proceed (when services selected) -->
+          <div class="space-y-3 pt-2">
+            <!-- Patient Visit History CTA (Only visible for existing / returning patients) -->
+            <button type="button" id="patientHistoryBtn" onclick="openPatientHistoryModal()" class="hidden w-full py-2.5 px-4 bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-900 font-bold rounded-xl text-xs transition flex items-center justify-between shadow-sm">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px] text-teal-700">history_edu</span>
+                <span>Patient Visit & Billing History</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span id="patientHistoryCountBadge" class="px-2 py-0.5 rounded-full bg-teal-200 text-teal-900 text-[10px] font-mono font-bold">0 Visits</span>
+                <span class="material-symbols-outlined text-[16px] text-teal-700">arrow_forward</span>
+              </div>
+            </button>
+
+            <!-- Save Patient Only Button (Visible by default until procedures are selected) -->
+            <button type="button" id="savePatientBtn" onclick="savePatientOnly()" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm shadow-md transition flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-[19px] text-teal-400">person_add</span>
+              <span id="savePatientBtnText">Save Patient Registration</span>
+            </button>
+
+            <!-- Generate Bill Button (Becomes primary active when services are selected) -->
+            <button type="submit" id="generateBillBtn" class="hidden w-full py-3.5 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-semibold rounded-xl text-sm shadow-md transition flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-[19px]">receipt_long</span>
+              <span>Generate Bill & Proceed to Payment</span>
+            </button>
+
+            <!-- Success Alert after Patient Save -->
+            <div id="patientSaveSuccessAlert" class="hidden p-3 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold flex items-center gap-2 animate-fade-in">
+              <span class="material-symbols-outlined text-teal-600 text-[18px]">check_circle</span>
+              <span id="patientSaveSuccessMsg">Patient registered successfully!</span>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- RIGHT 5 COLS: Recent Bills Counter & Patient Counter Display Pairing -->
+      <div class="lg:col-span-5 space-y-6">
+        
+        <!-- Patient Counter Tablet Pairing Card -->
+        <div class="bg-gradient-to-br from-teal-900 to-slate-900 text-white rounded-2xl p-5 shadow-sm border border-teal-800">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-teal-400 text-[20px]">tablet_mac</span>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-teal-300">Patient Counter Tablet</h3>
+            </div>
+            <a href="{% url 'payments:counter_display' hospital.slug %}{% if hospital.display_token %}?token={{ hospital.display_token }}{% endif %}" target="_blank" class="text-[11px] text-teal-300 hover:text-white font-semibold flex items-center gap-1 transition">
+              <span>Open Live</span>
+              <span class="material-symbols-outlined text-[13px]">open_in_new</span>
+            </a>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Open this URL on the tablet facing the patient counter. Whenever you generate an invoice, the dynamic QR with the exact amount appears on the tablet automatically!
+          </p>
+          <div class="mt-3 flex items-center gap-2">
+            <input type="text" id="counterTabletUrl" readonly value="{{ request.scheme }}://{{ request.get_host }}{% url 'payments:counter_display' hospital.slug %}{% if hospital.display_token %}?token={{ hospital.display_token }}{% endif %}" class="flex-1 px-2.5 py-1.5 bg-slate-950/70 border border-slate-700 rounded-lg text-slate-300 text-[11px] font-mono select-all">
+            <button type="button" onclick="copyCounterUrl()" class="px-3 py-1.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs rounded-lg transition" id="copyCounterBtn">
+              Copy URL
+            </button>
+          </div>
+        </div>
+
+        <!-- Patient Registry & Visit History (Upgraded from Recent Bills) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-sm font-bold font-['Plus_Jakarta_Sans'] text-slate-900 flex items-center gap-2">
+                <span class="material-symbols-outlined text-teal-600 text-[18px]">badge</span>
+                <span>Patient Directory & Visit History</span>
+              </h2>
+              <p class="text-[11px] text-slate-400">Search patient records or click to load history & bills</p>
+            </div>
+            <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold font-mono">
+              {{ patients_history|length }}
+            </span>
+          </div>
+
+          <!-- History Quick Search Bar -->
+          <div class="relative mb-3">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">search</span>
+            <input type="text" id="patientHistorySearch" oninput="filterPatientHistory()" placeholder="Filter by Name, Phone or UHID..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-500">
+          </div>
+
+          <div class="space-y-2.5 max-h-96 overflow-y-auto pr-1" id="patientHistoryList">
+            {% for p in patients_history %}
+            <div class="patient-history-card p-3 rounded-xl border border-slate-100 bg-slate-50 hover:bg-teal-50/30 hover:border-teal-200 transition cursor-pointer"
+                 data-search="{{ p.name|lower }} {{ p.phone }} {{ p.patient_id|lower|default:'' }}"
+                 onclick="selectExistingPatient('{{ p.id }}', '{{ p.name|escapejs }}', '{{ p.phone }}', '{{ p.age|default:'' }}', '{{ p.gender }}', '{{ p.patient_id|default:'' }}', {{ p.is_inpatient|yesno:'true,false' }}, '{{ p.room_bed_number|default:''|escapejs }}', '{{ p.admission_date|date:'d M Y'|default:'' }}', '{{ p.last_bill.total_amount|default:'' }}', '{{ p.last_bill.bill_number|default:'' }}', '{{ p.last_bill.created_at|date:'d M, h:i A'|default:'' }}')">
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="text-xs font-bold text-slate-900 truncate">{{ p.name }}</span>
+                  {% if p.patient_id %}
+                  <span class="px-1.5 py-0.2 rounded bg-teal-50 border border-teal-200 text-teal-800 font-mono text-[10px] font-bold">{{ p.patient_id }}</span>
+                  {% endif %}
+                </div>
+                <div>
+                  {% if p.is_inpatient and hospital.plan_tier != 'starter' %}
+                  <span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200 text-[10px] font-bold">
+                    IPD · {{ p.room_bed_number|default:"Bed Assigned" }}
+                  </span>
+                  {% else %}
+                  <span class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-medium">
+                    OPD
+                  </span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-slate-500">
+                <span class="font-mono">+91 {{ p.phone }}</span>
+                <span>{{ p.bills.count }} visit{{ p.bills.count|pluralize }} · Total: ₹{{ p.bills.first.total_amount|default:"0.00" }}</span>
+              </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-8 text-xs text-slate-400">
+              No patients registered yet. Enter details on the left to register your first patient.
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Inpatient Admission / Room Change Confirmation Modal -->
+  <div id="inpatientConfirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+      <div class="flex items-center gap-3 pb-3 mb-3 border-b border-slate-100">
+        <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+          <span class="material-symbols-outlined text-[24px]">hotel</span>
+        </div>
+        <div>
+          <h3 id="modalAdmissionTitle" class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Confirm Inpatient Admission</h3>
+          <p id="modalAdmissionSubtitle" class="text-xs text-slate-500">Admit patient to hospital ward / bed</p>
+        </div>
+      </div>
+
+      <p id="modalAdmissionDescription" class="text-xs text-slate-600 mb-4 leading-relaxed">
+        You are about to admit <strong id="modalPatientName" class="text-slate-900">this patient</strong> as an <strong>Inpatient (IPD)</strong>. A running medical stay ledger will be opened to track room rents, nursing, medicines, and doctor rounds until final discharge.
+      </p>
+
+      <div class="mb-5 space-y-3">
+        <!-- Cadre Preset Dropdown (Configured in Hospital Settings) -->
+        {% if ward_cadres %}
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Ward Cadre / Room Type *</label>
+          <div class="relative">
+            <select id="modalCadrePresetSelect" onchange="applyCadrePreset(this)" class="w-full appearance-none px-3 py-2.5 pr-8 bg-purple-50/50 border border-purple-200 rounded-xl text-xs font-semibold text-purple-900 focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <option value="">-- Select Ward Cadre / Room Type --</option>
+              {% for c in cadres_data %}
+              <option value="{{ c.id }}" data-service-id="{{ c.service_id }}" data-service-name="{{ c.service_name }}" data-service-price="{{ c.service_price }}" data-unit="{{ c.unit_short_label }}">{{ c.name }} ({{ c.beds|length }} Beds · ₹{{ c.service_price }}/{{ c.unit_short_label }})</option>
+              {% endfor %}
+              <option value="custom">+ Other / Manual Room Entry</option>
+            </select>
+            <span class="material-symbols-outlined absolute right-2.5 top-2.5 text-[18px] text-purple-600 pointer-events-none">expand_more</span>
+          </div>
+        </div>
+
+        <!-- Tariff & Rate Indicator Box -->
+        <div id="cadreTariffIndicator" class="hidden p-3 rounded-xl bg-purple-50/70 border border-purple-200 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-purple-600 text-[18px]">bed</span>
+            <div>
+              <span id="cadreTariffName" class="font-bold text-slate-900 block"></span>
+              <span class="text-[10px] text-slate-500">Auto-links to daily IPD bed charges</span>
+            </div>
+          </div>
+          <span id="cadreTariffPrice" class="font-mono font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 text-xs"></span>
+        </div>
+
+        <!-- Available Beds Grid in Selected Cadre -->
+        <div id="cadreBedsContainer" class="hidden">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-[11px] font-semibold text-slate-600">Click a Bed or pick from dropdown below:</label>
+            <div class="flex items-center gap-2.5 text-[10px]">
+              <span class="inline-flex items-center gap-1 text-emerald-700 font-semibold"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Available</span>
+              <span class="inline-flex items-center gap-1 text-amber-700 font-semibold"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Cleaning</span>
+              <span class="inline-flex items-center gap-1 text-rose-700 font-semibold"><span class="w-2 h-2 rounded-full bg-rose-500"></span> Occupied</span>
+            </div>
+          </div>
+          <div id="cadreBedsGrid" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1.5 bg-slate-50 border border-slate-200 rounded-xl">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+        {% endif %}
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Assigned Bed / Room Identifier *</label>
+          <div id="modalBedSelectWrapper" class="relative">
+            <select id="modalBedSelect" onchange="onModalBedSelectChange(this)" class="w-full appearance-none px-3 py-2.5 pr-8 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <option value="">-- Select Ward First --</option>
+            </select>
+            <span class="material-symbols-outlined absolute right-2.5 top-2.5 text-[18px] text-slate-500 pointer-events-none">expand_more</span>
+          </div>
+          <input type="text" id="modalBedInput" placeholder="e.g. Room 204 or ICU Bed 1" class="hidden w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500 mt-1">
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2.5">
+        <button type="button" onclick="cancelInpatientAdmission()" class="px-3.5 py-2 text-slate-500 hover:text-slate-700 text-xs font-medium">Cancel</button>
+        <button type="button" id="confirmAdmissionModalBtn" onclick="confirmInpatientAdmission()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-sm">
+          Confirm Admission
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Discharge Confirmation Modal -->
+  <div id="dischargeConfirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+      <div class="flex items-center gap-3 pb-3 mb-3 border-b border-slate-100">
+        <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center">
+          <span class="material-symbols-outlined text-[24px]">logout</span>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Discharge Inpatient</h3>
+          <p class="text-xs text-slate-500">Generate final bill & confirm settlement</p>
+        </div>
+      </div>
+
+      <div class="mb-4 space-y-2">
+        <p class="text-xs text-slate-600 leading-relaxed">
+          You are initiating discharge for <strong id="dischargePatientName" class="text-slate-900"></strong>.
+        </p>
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-1">
+          <div class="flex items-center gap-1.5 font-bold text-amber-900">
+            <span class="material-symbols-outlined text-[16px] text-amber-600">receipt_long</span>
+            <span>Final Bill & Payment Settlement Required</span>
+          </div>
+          <p class="text-[11px] text-amber-800 leading-normal">
+            Confirming discharge will generate the final stay invoice and take you to Payment Checkout (UPI/Cash).
+            <strong>Official discharge and bed release to Housekeeping will only be confirmed once the final bill is paid in full.</strong>
+          </p>
+        </div>
+      </div>
+
+      <form id="dischargeForm" method="POST" action="" class="flex justify-end gap-2.5">
+        {% csrf_token %}
+        <button type="button" onclick="closeDischargeModal()" class="px-3.5 py-2 text-slate-500 hover:text-slate-700 text-xs font-medium">Cancel</button>
+        <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[16px]">receipt</span>
+          <span>Generate Final Bill & Proceed to Payment</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Complete Patient History Modal (Inpatient & Outpatient Billing Ledgers) - Fullscreen View -->
+  <div id="patientHistoryModal" class="fixed inset-0 z-50 hidden bg-slate-900/75 backdrop-blur-md p-2 sm:p-4 md:p-6 items-center justify-center">
+    <div class="bg-white border border-slate-200 rounded-2xl w-full h-full max-w-[96vw] max-h-[96vh] p-5 sm:p-6 shadow-2xl relative flex flex-col">
+      <div class="flex items-center justify-between pb-3.5 mb-3 border-b border-slate-100">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-[24px]">folder_shared</span>
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-slate-900 font-['Plus_Jakarta_Sans'] flex items-center gap-2">
+              <span id="historyModalPatientName">Patient Journey & History</span>
+              <span id="historyModalPatientIdBadge" class="px-2.5 py-0.5 rounded bg-teal-50 border border-teal-200 text-teal-800 font-mono text-xs font-bold"></span>
+            </h3>
+            <p id="historyModalPatientMeta" class="text-xs text-slate-500">Journey-based view of Inpatient Admissions & Outpatient Visits</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="closePatientHistoryModal()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition">
+            <span class="material-symbols-outlined text-[16px]">close</span>
+            <span class="hidden sm:inline">Close</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Financial & Journey Metrics Strip -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3.5">
+        <div class="p-2.5 bg-purple-50/70 rounded-xl border border-purple-200">
+          <span class="text-[10px] text-purple-700 uppercase block font-semibold">IPD Admissions</span>
+          <span id="historyModalIpdCount" class="text-sm font-bold font-mono text-purple-900">0 Admissions</span>
+        </div>
+        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+          <span class="text-[10px] text-slate-500 uppercase block font-semibold">OPD Visits</span>
+          <span id="historyModalOpdCount" class="text-sm font-bold font-mono text-slate-900">0 Visits</span>
+        </div>
+        <div class="p-2.5 bg-emerald-50/60 rounded-xl border border-emerald-200">
+          <span class="text-[10px] text-emerald-700 uppercase block font-semibold">Total Paid</span>
+          <span id="historyModalTotalPaid" class="text-sm font-bold font-mono text-emerald-700">₹0.00</span>
+        </div>
+        <div class="p-2.5 bg-rose-50/60 rounded-xl border border-rose-200">
+          <span class="text-[10px] text-rose-700 uppercase block font-semibold">Outstanding Due</span>
+          <span id="historyModalOutstanding" class="text-sm font-bold font-mono text-rose-700">₹0.00</span>
+        </div>
+      </div>
+
+      <!-- Journey Filters & Date Range Bar -->
+      <div class="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200 mb-3 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+        <!-- Journey Type Tabs -->
+        <div class="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200">
+          <button type="button" onclick="filterHistoryType('all')" id="historyTabAll" class="history-type-tab px-2.5 py-1 rounded-md font-bold bg-teal-600 text-white shadow-xs transition">
+            All Journeys
+          </button>
+          <button type="button" onclick="filterHistoryType('ipd')" id="historyTabIpd" class="history-type-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 transition">
+            Inpatient (IPD)
+          </button>
+          <button type="button" onclick="filterHistoryType('opd')" id="historyTabOpd" class="history-type-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 transition">
+            Outpatient (OPD)
+          </button>
+        </div>
+
+        <!-- Date Filtering (From Date -> To Date & Reset) -->
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] text-slate-500 font-medium">From:</span>
+            <input type="date" id="historyFilterFromDate" onchange="applyHistoryFilters()" class="px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500">
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] text-slate-500 font-medium">To:</span>
+            <input type="date" id="historyFilterToDate" onchange="applyHistoryFilters()" class="px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500">
+          </div>
+          <button type="button" onclick="resetHistoryDateFilter()" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-semibold transition" title="Clear Date Filter">
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable List of Journey Groups (Inpatient Admissions & Outpatient Visits) -->
+      <div class="flex-1 overflow-y-auto space-y-3 pr-1 min-h-[180px]" id="historyModalBillsContainer">
+        <!-- Dynamically populated via AJAX & filter engine -->
+      </div>
+
+      <div class="flex items-center justify-between pt-3 mt-3 border-t border-slate-100 text-xs">
+        <span id="historyModalFilteredCount" class="text-slate-500 font-medium">Showing all records</span>
+        <button type="button" onclick="closePatientHistoryModal()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-sm">
+          Close History
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Duplicate Bill Detection & Confirmation Warning Modal -->
+  <div id="duplicateBillConfirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white border border-amber-300 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+      <div class="flex items-center gap-3 pb-3 mb-3 border-b border-amber-100">
+        <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[24px]">warning</span>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Possible Duplicate Bill</h3>
+          <p class="text-xs text-amber-700 font-medium">Same amount detected for this patient</p>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-600 mb-4 leading-relaxed">
+        An invoice with the exact same amount of <strong id="duplicateBillAmount" class="text-slate-900 font-mono text-sm"></strong> was already generated for <strong id="duplicatePatientName" class="text-slate-900"></strong> recently (<span id="duplicateBillNumber" class="font-mono font-bold text-slate-800"></span> at <span id="duplicateBillTime" class="text-slate-500"></span>).
+      </p>
+
+      <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 mb-5 text-[11px] text-amber-900 flex items-start gap-2">
+        <span class="material-symbols-outlined text-amber-600 text-[16px] shrink-0 mt-0.5">info</span>
+        <span>Please check whether you intended to generate another bill with identical fees, or if this bill was already processed.</span>
+      </div>
+
+      <div class="flex items-center justify-end gap-2.5">
+        <button type="button" onclick="cancelDuplicateBill()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">
+          Cancel & Review
+        </button>
+        <button type="button" onclick="confirmDuplicateBill()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[15px]">check_circle</span>
+          <span>Yes, Generate Bill Anyway</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script for Copying Counter Tablet URL -->
+  <script>
+    function copyCounterUrl() {
+      const input = document.getElementById('counterTabletUrl');
+      if (input) {
+        navigator.clipboard.writeText(input.value).then(() => {
+          const btn = document.getElementById('copyCounterBtn');
+          if (btn) {
+            const originalText = btn.innerText;
+            btn.innerText = 'Copied!';
+            setTimeout(() => { btn.innerText = originalText; }, 2000);
+          }
+        });
+      }
+    }
+
+    // Departmental Filter for Billing Tariffs
+    let activeDept = 'all';
+
+    function filterServicesDept(dept) {
+      activeDept = dept;
+      document.querySelectorAll('.dept-tab').forEach(btn => {
+        if (btn.getAttribute('data-dept') === dept) {
+          btn.className = 'dept-tab px-2.5 py-1 rounded-lg font-semibold bg-teal-600 text-white transition shrink-0';
+        } else {
+          btn.className = 'dept-tab px-2.5 py-1 rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0';
+        }
+      });
+      filterServicesCombined();
+    }
+
+    function filterServicesBySearch() {
+      filterServicesCombined();
+    }
+
+    function filterServicesCombined() {
+      const search = (document.getElementById('counterTariffSearch')?.value || '').trim().toLowerCase();
+      document.querySelectorAll('.service-item-card').forEach(card => {
+        const itemDept = card.getAttribute('data-dept');
+        const searchData = card.getAttribute('data-search') || '';
+        const matchesDept = (activeDept === 'all' || itemDept === activeDept);
+        const matchesSearch = !search || searchData.includes(search);
+
+        if (matchesDept && matchesSearch) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    }
+
+    function filterPatientHistory() {
+      const q = (document.getElementById('patientHistorySearch')?.value || '').trim().toLowerCase();
+      document.querySelectorAll('.patient-history-card').forEach(card => {
+        const text = card.getAttribute('data-search') || '';
+        if (!q || text.includes(q)) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    }
+
+    // Inpatient (IPD) Admission & Discharge UI Handlers
+    let currentActivePatientId = null;
+    let currentActivePatientName = '';
+    let isRoomChangeMode = false;
+
+    function openRoomChangeModal() {
+      isRoomChangeMode = true;
+      const nameVal = document.getElementById('patientNameInput')?.value.trim() || currentActivePatientName;
+      const modalTitle = document.getElementById('modalAdmissionTitle');
+      const modalSub = document.getElementById('modalAdmissionSubtitle');
+      const modalDesc = document.getElementById('modalAdmissionDescription');
+      const confirmBtn = document.getElementById('confirmAdmissionModalBtn');
+
+      if (modalTitle) modalTitle.innerText = 'Transfer Patient / Change Room';
+      if (modalSub) modalSub.innerText = 'Reassign bed and auto-link new room tariff rate';
+      if (modalDesc) {
+        modalDesc.innerHTML = `Transferring <strong class="text-slate-900">${escapeHtml(nameVal || 'this patient')}</strong> to a new room or ward. Selecting a new ward will automatically switch the active room tariff for this bill.`;
+      }
+      if (confirmBtn) {
+        confirmBtn.innerText = 'Confirm Room Transfer';
+      }
+
+      document.getElementById('inpatientConfirmModal')?.classList.remove('hidden');
+      document.getElementById('inpatientConfirmModal')?.classList.add('flex');
+
+      // Check current room input to find corresponding cadre if possible
+      const currentRoom = document.getElementById('roomBedNumberInput')?.value.trim();
+      const cadreSelect = document.getElementById('modalCadrePresetSelect');
+      if (cadreSelect && currentRoom) {
+        for (const c of CADRES_DATA) {
+          if (c.beds && c.beds.some(b => String(b.number) === String(currentRoom))) {
+            cadreSelect.value = String(c.id);
+            applyCadrePreset(cadreSelect);
+            const modalBedSelect = document.getElementById('modalBedSelect');
+            if (modalBedSelect) modalBedSelect.value = currentRoom;
+            break;
+          }
+        }
+      }
+    }
+
+    function toggleInpatientModal(cb) {
+      if (cb.checked) {
+        isRoomChangeMode = false;
+        const nameVal = document.getElementById('patientNameInput')?.value.trim();
+        const modalTitle = document.getElementById('modalAdmissionTitle');
+        const modalSub = document.getElementById('modalAdmissionSubtitle');
+        const modalDesc = document.getElementById('modalAdmissionDescription');
+        const confirmBtn = document.getElementById('confirmAdmissionModalBtn');
+
+        if (modalTitle) modalTitle.innerText = 'Confirm Inpatient Admission';
+        if (modalSub) modalSub.innerText = 'Admit patient to hospital ward / bed';
+        if (modalDesc) {
+          modalDesc.innerHTML = `You are about to admit <strong id="modalPatientName" class="text-slate-900">${escapeHtml(nameVal || 'this patient')}</strong> as an <strong>Inpatient (IPD)</strong>. A running medical stay ledger will be opened to track room rents, nursing, medicines, and doctor rounds until final discharge.`;
+        }
+        if (confirmBtn) {
+          confirmBtn.innerText = 'Confirm Admission';
+        }
+
+        document.getElementById('inpatientConfirmModal')?.classList.remove('hidden');
+        document.getElementById('inpatientConfirmModal')?.classList.add('flex');
+
+        // Check if a cadre is already pre-selected or select the first available cadre
+        const cadreSelect = document.getElementById('modalCadrePresetSelect');
+        if (cadreSelect) {
+          if (!cadreSelect.value && cadreSelect.options.length > 1) {
+            // Pre-select first real cadre option if none chosen yet
+            cadreSelect.selectedIndex = 1;
+          }
+          if (cadreSelect.value) {
+            applyCadrePreset(cadreSelect);
+          }
+        }
+      } else {
+        document.getElementById('roomBedInputWrapper')?.classList.add('hidden');
+        document.getElementById('inpatientSummaryCard')?.classList.add('hidden');
+        const statusPill = document.getElementById('patientStatusPill');
+        if (statusPill) statusPill.classList.add('hidden');
+        const dateBadgeWrapper = document.getElementById('admissionDateBadgeWrapper');
+        if (dateBadgeWrapper) {
+          dateBadgeWrapper.classList.add('hidden');
+          dateBadgeWrapper.classList.remove('flex');
+        }
+      }
+    }
+
+    // Consulting Doctor Searchable Dropdown Helper Functions
+    let highlightedDoctorIndex = -1;
+
+    function openDoctorDropdown() {
+      const dropdown = document.getElementById('doctorOptionsDropdown');
+      if (dropdown) dropdown.classList.remove('hidden');
+      highlightCurrentDoctorSelection();
+    }
+
+    function toggleDoctorDropdown() {
+      const dropdown = document.getElementById('doctorOptionsDropdown');
+      if (!dropdown) return;
+      dropdown.classList.toggle('hidden');
+      if (!dropdown.classList.contains('hidden')) {
+        highlightCurrentDoctorSelection();
+      }
+    }
+
+    function selectDoctor(id, name, spec) {
+      const idInput = document.getElementById('selectedDoctorId');
+      const searchInput = document.getElementById('doctorSearchInput');
+      const dropdown = document.getElementById('doctorOptionsDropdown');
+
+      if (idInput) idInput.value = id;
+      if (searchInput) searchInput.value = id ? `${name} (${spec})` : '';
+      if (dropdown) dropdown.classList.add('hidden');
+      highlightedDoctorIndex = -1;
+    }
+
+    function getVisibleDoctorOptions() {
+      const dropdown = document.getElementById('doctorOptionsDropdown');
+      if (!dropdown) return [];
+      return Array.from(dropdown.children).filter(el => !el.classList.contains('hidden'));
+    }
+
+    function highlightCurrentDoctorSelection() {
+      const visible = getVisibleDoctorOptions();
+      if (visible.length === 0) {
+        highlightedDoctorIndex = -1;
+        return;
+      }
+      if (highlightedDoctorIndex < 0 || highlightedDoctorIndex >= visible.length) {
+        highlightedDoctorIndex = 0; // Default to the top visible item
+      }
+      visible.forEach((el, idx) => {
+        if (idx === highlightedDoctorIndex) {
+          el.classList.add('bg-teal-100/70', 'dark:bg-teal-900/60');
+          el.scrollIntoView({ block: 'nearest' });
+        } else {
+          el.classList.remove('bg-teal-100/70', 'dark:bg-teal-900/60');
+        }
+      });
+    }
+
+    function filterDoctorOptions() {
+      const q = (document.getElementById('doctorSearchInput')?.value || '').trim().toLowerCase();
+      const dropdown = document.getElementById('doctorOptionsDropdown');
+      if (dropdown) {
+        Array.from(dropdown.children).forEach((el, index) => {
+          if (index === 0) {
+            // First item is "-- No Consulting Doctor --"
+            el.classList.toggle('hidden', !!q);
+          } else {
+            const text = el.getAttribute('data-search') || '';
+            el.classList.toggle('hidden', q && !text.includes(q));
+          }
+        });
+      }
+      highlightedDoctorIndex = 0;
+      openDoctorDropdown();
+    }
+
+    function handleDoctorSearchKeydown(e) {
+      const dropdown = document.getElementById('doctorOptionsDropdown');
+      const isDropdownOpen = dropdown && !dropdown.classList.contains('hidden');
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (!isDropdownOpen) {
+          openDoctorDropdown();
+        } else {
+          const visible = getVisibleDoctorOptions();
+          if (visible.length > 0) {
+            highlightedDoctorIndex = (highlightedDoctorIndex + 1) % visible.length;
+            highlightCurrentDoctorSelection();
+          }
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (isDropdownOpen) {
+          const visible = getVisibleDoctorOptions();
+          if (visible.length > 0) {
+            highlightedDoctorIndex = (highlightedDoctorIndex - 1 + visible.length) % visible.length;
+            highlightCurrentDoctorSelection();
+          }
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault(); // Prevent accidental form submit
+        const visible = getVisibleDoctorOptions();
+        if (visible.length > 0) {
+          const idxToSelect = (highlightedDoctorIndex >= 0 && highlightedDoctorIndex < visible.length)
+            ? highlightedDoctorIndex
+            : 0;
+          visible[idxToSelect].click();
+        } else if (dropdown) {
+          dropdown.classList.add('hidden');
+        }
+      } else if (e.key === 'Escape') {
+        if (dropdown) dropdown.classList.add('hidden');
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      const searchInput = document.getElementById('doctorSearchInput');
+      const dropdown = document.getElementById('doctorOptionsDropdown');
+      if (searchInput && dropdown && !searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
+
+    // Inpatient Cadre & Room Range Preset Engine
+    const CADRES_DATA = {{ cadres_json|default:'[]'|safe }};
+
+    function applyCadrePreset(sel) {
+      const cadreId = (sel && typeof sel === 'object') ? sel.value : sel;
+      const bedsContainer = document.getElementById('cadreBedsContainer');
+      const bedsGrid = document.getElementById('cadreBedsGrid');
+      const modalBedSelect = document.getElementById('modalBedSelect');
+      const modalBedSelectWrapper = document.getElementById('modalBedSelectWrapper');
+      const modalBedInput = document.getElementById('modalBedInput');
+      const tariffBox = document.getElementById('cadreTariffIndicator');
+      const tariffName = document.getElementById('cadreTariffName');
+      const tariffPrice = document.getElementById('cadreTariffPrice');
+
+      if (!cadreId || cadreId === 'custom') {
+        if (bedsContainer) bedsContainer.classList.add('hidden');
+        if (tariffBox) tariffBox.classList.add('hidden');
+        if (modalBedSelect) {
+          modalBedSelect.innerHTML = '<option value="">-- Manual Room Identifier --</option>';
+        }
+        if (cadreId === 'custom') {
+          if (modalBedSelectWrapper) modalBedSelectWrapper.classList.add('hidden');
+          if (modalBedInput) {
+            modalBedInput.classList.remove('hidden');
+            modalBedInput.value = '';
+            modalBedInput.focus();
+          }
+        } else {
+          if (modalBedSelectWrapper) modalBedSelectWrapper.classList.remove('hidden');
+          if (modalBedInput) modalBedInput.classList.add('hidden');
+        }
+        return;
+      }
+
+      // Show select dropdown and hide raw text input
+      if (modalBedSelectWrapper) modalBedSelectWrapper.classList.remove('hidden');
+      if (modalBedInput) modalBedInput.classList.add('hidden');
+
+      const cadre = CADRES_DATA.find(c => String(c.id) === String(cadreId));
+      if (cadre) {
+        // 1. Update Tariff & Rate indicator box
+        if (tariffBox) {
+          if (cadre.service_name || cadre.service_price) {
+            if (tariffName) tariffName.innerText = cadre.service_name || cadre.name;
+            if (tariffPrice) tariffPrice.innerText = `₹${cadre.service_price} / ${cadre.unit_short_label || 'day'}`;
+            tariffBox.classList.remove('hidden');
+          } else {
+            tariffBox.classList.add('hidden');
+          }
+        }
+
+        // 2. Populate Assigned Bed / Room Identifier <select>
+        if (modalBedSelect) {
+          let selectHtml = `<option value="">-- Select Available Room / Bed --</option>`;
+          const currentPatientBed = document.getElementById('roomBedNumberInput')?.value.trim();
+
+          if (cadre.beds && cadre.beds.length > 0) {
+            cadre.beds.forEach(b => {
+              // In Room Change mode, allow keeping current room
+              const isThisPatientCurrentRoom = (isRoomChangeMode && currentPatientBed && String(b.number) === String(currentPatientBed));
+              if (b.is_occupied && !isThisPatientCurrentRoom) {
+                selectHtml += `<option value="${b.number}" disabled class="text-rose-500 bg-rose-50">${b.number} [OCCUPIED]</option>`;
+              } else if (b.is_cleaning && !isThisPatientCurrentRoom) {
+                selectHtml += `<option value="${b.number}" disabled class="text-amber-600 bg-amber-50">${b.number} [CLEANING IN PROGRESS]</option>`;
+              } else if (isThisPatientCurrentRoom) {
+                selectHtml += `<option value="${b.number}">${b.number} (Current Bed)</option>`;
+              } else {
+                selectHtml += `<option value="${b.number}">${b.number} (Available)</option>`;
+              }
+            });
+          }
+          modalBedSelect.innerHTML = selectHtml;
+
+          if (isRoomChangeMode && currentPatientBed && cadre.beds.some(b => String(b.number) === String(currentPatientBed))) {
+            modalBedSelect.value = currentPatientBed;
+            if (modalBedInput) modalBedInput.value = currentPatientBed;
+          } else {
+            // Auto-select the first available bed (not occupied and not cleaning)
+            const firstAvailable = cadre.beds ? cadre.beds.find(b => !b.is_occupied && !b.is_cleaning) : null;
+            if (firstAvailable) {
+              modalBedSelect.value = firstAvailable.number;
+              if (modalBedInput) modalBedInput.value = firstAvailable.number;
+            } else {
+              modalBedSelect.value = '';
+              if (modalBedInput) modalBedInput.value = '';
+            }
+          }
+        }
+
+        // 3. Render visual interactive beds grid
+        if (cadre.beds && cadre.beds.length > 0) {
+          if (bedsGrid) {
+            const currentPatientBed = document.getElementById('roomBedNumberInput')?.value.trim();
+            bedsGrid.innerHTML = cadre.beds.map(b => {
+              const isThisPatientCurrentRoom = (isRoomChangeMode && currentPatientBed && String(b.number) === String(currentPatientBed));
+              const isOccupiedByOther = b.is_occupied && !isThisPatientCurrentRoom;
+              const isCleaningByOther = b.is_cleaning && !isThisPatientCurrentRoom;
+              const isSelected = modalBedSelect && modalBedSelect.value === b.number;
+
+              return `
+                <button type="button" onclick="selectPresetBed('${b.number}', '${cadre.service_id}')" class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition flex items-center gap-1.5 ${
+                  isOccupiedByOther 
+                    ? 'bg-rose-100 text-rose-800 border border-rose-300 opacity-60 cursor-not-allowed' 
+                    : (isCleaningByOther
+                        ? 'bg-amber-100 text-amber-800 border border-amber-300 opacity-80 cursor-not-allowed'
+                        : (isSelected 
+                            ? 'bg-purple-600 text-white border border-purple-700 shadow-sm' 
+                            : (isThisPatientCurrentRoom
+                                ? 'bg-purple-100 text-purple-900 border border-purple-300'
+                                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300')))
+                }" ${isOccupiedByOther ? 'title="Currently occupied by an admitted patient" disabled' : (isCleaningByOther ? 'title="Currently undergoing cleaning & sanitization by housekeeping" disabled' : '')}>
+                  <span class="w-1.5 h-1.5 rounded-full ${isOccupiedByOther ? 'bg-rose-500' : (isCleaningByOther ? 'bg-amber-500 animate-pulse' : (isSelected ? 'bg-white' : (isThisPatientCurrentRoom ? 'bg-purple-600' : 'bg-emerald-500')))}"></span>
+                  <span>${b.number}</span>
+                  ${isOccupiedByOther ? '<span class="text-[9px] font-sans uppercase font-bold text-rose-700">(Occupied)</span>' : (isCleaningByOther ? '<span class="text-[9px] font-sans uppercase font-bold text-amber-800">(Cleaning)</span>' : (isThisPatientCurrentRoom ? '<span class="text-[9px] font-sans uppercase font-bold text-purple-700">(Current)</span>' : ''))}
+                </button>
+              `;
+            }).join('');
+          }
+          if (bedsContainer) bedsContainer.classList.remove('hidden');
+        }
+
+        // 4. Automatically auto-check and load the linked IPD tariff rate
+        // First uncheck other ward cadre room tariffs so we don't double charge multiple room categories
+        CADRES_DATA.forEach(otherCadre => {
+          if (otherCadre.service_id && String(otherCadre.service_id) !== String(cadre.service_id)) {
+            const otherCb = document.getElementById('srv_' + otherCadre.service_id);
+            if (otherCb && otherCb.checked) {
+              otherCb.checked = false;
+              otherCb.dispatchEvent(new Event('change'));
+            }
+          }
+        });
+
+        if (cadre.service_id) {
+          const srvCb = document.getElementById('srv_' + cadre.service_id);
+          if (srvCb && !srvCb.checked) {
+            srvCb.checked = true;
+            srvCb.dispatchEvent(new Event('change'));
+          }
+        }
+      }
+    }
+
+    function onModalBedSelectChange(sel) {
+      const modalBedInput = document.getElementById('modalBedInput');
+      if (modalBedInput) {
+        modalBedInput.value = sel.value;
+      }
+      // Highlight the selected button in the grid
+      const cadrePresetSelect = document.getElementById('modalCadrePresetSelect');
+      const cadreId = cadrePresetSelect?.value;
+      const cadre = CADRES_DATA.find(c => String(c.id) === String(cadreId));
+      if (cadre && cadre.beds) {
+        const bedsGrid = document.getElementById('cadreBedsGrid');
+        if (bedsGrid) {
+          bedsGrid.querySelectorAll('button').forEach(btn => {
+            const num = btn.querySelector('span:nth-child(2)')?.innerText;
+            if (num === sel.value) {
+              btn.className = 'px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition flex items-center gap-1.5 bg-purple-600 text-white border border-purple-700 shadow-sm';
+            } else if (!btn.disabled) {
+              btn.className = 'px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300';
+            }
+          });
+        }
+      }
+    }
+
+    function selectPresetBed(bedNumber, serviceId) {
+      const modalBedSelect = document.getElementById('modalBedSelect');
+      const modalBedInput = document.getElementById('modalBedInput');
+      if (modalBedSelect) {
+        modalBedSelect.value = bedNumber;
+      }
+      if (modalBedInput) {
+        modalBedInput.value = bedNumber;
+      }
+
+      // Highlight in grid
+      const bedsGrid = document.getElementById('cadreBedsGrid');
+      if (bedsGrid) {
+        bedsGrid.querySelectorAll('button').forEach(btn => {
+          const num = btn.querySelector('span:nth-child(2)')?.innerText;
+          if (num === bedNumber) {
+            btn.className = 'px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition flex items-center gap-1.5 bg-purple-600 text-white border border-purple-700 shadow-sm';
+          } else if (!btn.disabled) {
+            btn.className = 'px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300';
+          }
+        });
+      }
+
+      if (serviceId) {
+        // Uncheck other ward cadre room tariffs before checking new one
+        CADRES_DATA.forEach(otherCadre => {
+          if (otherCadre.service_id && String(otherCadre.service_id) !== String(serviceId)) {
+            const otherCb = document.getElementById('srv_' + otherCadre.service_id);
+            if (otherCb && otherCb.checked) {
+              otherCb.checked = false;
+              otherCb.dispatchEvent(new Event('change'));
+            }
+          }
+        });
+
+        const srvCb = document.getElementById('srv_' + serviceId);
+        if (srvCb && !srvCb.checked) {
+          srvCb.checked = true;
+          srvCb.dispatchEvent(new Event('change'));
+        }
+      }
+    }
+
+    function cancelInpatientAdmission() {
+      const cb = document.getElementById('inpatientCheckbox');
+      if (cb) cb.checked = false;
+      document.getElementById('inpatientConfirmModal')?.classList.add('hidden');
+      document.getElementById('inpatientConfirmModal')?.classList.remove('flex');
+    }
+
+    function confirmInpatientAdmission() {
+      const modalBedSelect = document.getElementById('modalBedSelect');
+      const modalBedInput = document.getElementById('modalBedInput');
+      const bedVal = (modalBedSelect && !modalBedSelect.parentElement.classList.contains('hidden') && modalBedSelect.value) 
+        ? modalBedSelect.value.trim() 
+        : (modalBedInput?.value.trim() || '');
+
+      const bedInput = document.getElementById('roomBedNumberInput');
+      if (bedInput) bedInput.value = bedVal || 'Ward Bed';
+      document.getElementById('roomBedInputWrapper')?.classList.remove('hidden');
+
+      const statusPill = document.getElementById('patientStatusPill');
+      if (statusPill) {
+        statusPill.innerText = 'INPATIENT · ' + (bedVal || 'Bed Assigned');
+        statusPill.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 border border-purple-200';
+      }
+
+      document.getElementById('inpatientConfirmModal')?.classList.add('hidden');
+      document.getElementById('inpatientConfirmModal')?.classList.remove('flex');
+    }
+
+    function openDischargeModal() {
+      if (!currentActivePatientId) return;
+      document.getElementById('dischargePatientName').innerText = currentActivePatientName;
+      document.getElementById('dischargeForm').action = `/billing/{{ hospital.slug }}/patient/${currentActivePatientId}/discharge/`;
+      document.getElementById('dischargeConfirmModal')?.classList.remove('hidden');
+      document.getElementById('dischargeConfirmModal')?.classList.add('flex');
+    }
+
+    function closeDischargeModal() {
+      document.getElementById('dischargeConfirmModal')?.classList.add('hidden');
+      document.getElementById('dischargeConfirmModal')?.classList.remove('flex');
+    }
+
+    // Patient Journey & Billing History Modal Engine
+    let activePatientHistoryData = null;
+    let activeHistoryFilterType = 'all';
+
+    function openPatientHistoryModal() {
+      if (!currentActivePatientId) return;
+      document.getElementById('patientHistoryModal')?.classList.remove('hidden');
+      document.getElementById('patientHistoryModal')?.classList.add('flex');
+      loadFullPatientHistory(currentActivePatientId);
+    }
+
+    function closePatientHistoryModal() {
+      document.getElementById('patientHistoryModal')?.classList.add('hidden');
+      document.getElementById('patientHistoryModal')?.classList.remove('flex');
+    }
+
+    function filterHistoryType(type) {
+      activeHistoryFilterType = type;
+      ['all', 'ipd', 'opd'].forEach(t => {
+        const btn = document.getElementById('historyTab' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (btn) {
+          if (t === type) {
+            btn.className = 'history-type-tab px-2.5 py-1 rounded-md font-bold bg-teal-600 text-white shadow-xs transition';
+          } else {
+            btn.className = 'history-type-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 transition';
+          }
+        }
+      });
+      applyHistoryFilters();
+    }
+
+    function resetHistoryDateFilter() {
+      const fromInput = document.getElementById('historyFilterFromDate');
+      const toInput = document.getElementById('historyFilterToDate');
+      if (fromInput) fromInput.value = '';
+      if (toInput) toInput.value = '';
+      applyHistoryFilters();
+    }
+
+    function applyHistoryFilters() {
+      if (!activePatientHistoryData || !activePatientHistoryData.bills) return;
+
+      const fromVal = document.getElementById('historyFilterFromDate')?.value;
+      const toVal = document.getElementById('historyFilterToDate')?.value;
+
+      const filteredBills = activePatientHistoryData.bills.filter(b => {
+        // Filter by Type
+        if (activeHistoryFilterType !== 'all' && b.bill_type !== activeHistoryFilterType) {
+          return false;
+        }
+        // Filter by Date
+        if (fromVal && b.date_iso < fromVal) return false;
+        if (toVal && b.date_iso > toVal) return false;
+        return true;
+      });
+
+      renderPatientJourneys(filteredBills, activePatientHistoryData.patient);
+    }
+
+    function loadFullPatientHistory(patientId) {
+      const container = document.getElementById('historyModalBillsContainer');
+      if (container) {
+        container.innerHTML = `
+          <div class="py-12 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined animate-spin text-[20px] text-teal-600">progress_activity</span>
+            <span>Loading patient journey & stay ledgers...</span>
+          </div>
+        `;
+      }
+
+      fetch(`/billing/{{ hospital.slug }}/api/patient-summary/${patientId}/`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data || !data.patient) return;
+          activePatientHistoryData = data;
+
+          // Header Info
+          const nameEl = document.getElementById('historyModalPatientName');
+          const idBadge = document.getElementById('historyModalPatientIdBadge');
+          const metaEl = document.getElementById('historyModalPatientMeta');
+
+          if (nameEl) nameEl.innerText = data.patient.name;
+          if (idBadge) {
+            idBadge.innerText = data.patient.patient_id || 'ID Pending';
+            idBadge.className = data.patient.patient_id ? 'px-2 py-0.5 rounded bg-teal-50 border border-teal-200 text-teal-800 font-mono text-xs font-bold' : 'hidden';
+          }
+          if (metaEl) {
+            metaEl.innerText = `+91 ${data.patient.phone} · ${data.patient.is_inpatient ? 'Active Inpatient (' + (data.patient.room_bed_number || 'Bed') + ')' : 'Outpatient (OPD)'}`;
+          }
+
+          // Count IPD and OPD
+          const ipdBills = data.bills ? data.bills.filter(b => b.bill_type === 'ipd') : [];
+          const opdBills = data.bills ? data.bills.filter(b => b.bill_type === 'opd') : [];
+          
+          const ipdCountEl = document.getElementById('historyModalIpdCount');
+          const opdCountEl = document.getElementById('historyModalOpdCount');
+          if (ipdCountEl) ipdCountEl.innerText = `${ipdBills.length} Inpatient Record${ipdBills.length === 1 ? '' : 's'}`;
+          if (opdCountEl) opdCountEl.innerText = `${opdBills.length} Outpatient Visit${opdBills.length === 1 ? '' : 's'}`;
+
+          // Financial Summary
+          document.getElementById('historyModalTotalPaid').innerText = '₹' + data.summary.total_paid;
+          document.getElementById('historyModalOutstanding').innerText = '₹' + data.summary.outstanding;
+
+          // Apply initial filters
+          applyHistoryFilters();
+        })
+        .catch(() => {
+          if (container) {
+            container.innerHTML = `<div class="py-8 text-center text-xs text-rose-500 font-semibold">Failed to load patient history records.</div>`;
+          }
+        });
+    }
+
+    function renderPatientJourneys(bills, patient) {
+      const container = document.getElementById('historyModalBillsContainer');
+      const counterEl = document.getElementById('historyModalFilteredCount');
+      if (!container) return;
+
+      if (!bills || bills.length === 0) {
+        container.innerHTML = `
+          <div class="py-12 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            <span class="material-symbols-outlined text-[32px] text-slate-300 block mb-1">receipt_long</span>
+            No visits or admission records match the selected filters.
+          </div>
+        `;
+        if (counterEl) counterEl.innerText = '0 records found';
+        return;
+      }
+
+      if (counterEl) counterEl.innerText = `Showing ${bills.length} record${bills.length === 1 ? '' : 's'}`;
+
+      // Group bills by Inpatient Journeys vs Outpatient Visits, and by Month/Admission
+      // Separate into IPD and OPD buckets
+      const ipdBills = bills.filter(b => b.bill_type === 'ipd');
+      const opdBills = bills.filter(b => b.bill_type === 'opd');
+
+      let html = '';
+
+      // 1. INPATIENT (IPD) JOURNEY SECTION
+      if (ipdBills.length > 0 && (activeHistoryFilterType === 'all' || activeHistoryFilterType === 'ipd')) {
+        // Calculate IPD subtotal
+        const ipdTotal = ipdBills.reduce((sum, b) => sum + parseFloat(b.total_amount || 0), 0);
+        html += `
+          <div class="rounded-xl border border-purple-200 bg-purple-50/30 overflow-hidden shadow-xs">
+            <div class="p-3 bg-purple-100/60 border-b border-purple-200 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-purple-700 text-[20px]">hotel</span>
+                <div>
+                  <h4 class="text-xs font-bold text-purple-950 font-['Plus_Jakarta_Sans'] uppercase tracking-wider">Inpatient (IPD) Admission & Stay Journeys</h4>
+                  <p class="text-[10px] text-purple-800">Bed charges, nursing, medical procedures & running stay invoices</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="px-2 py-0.5 rounded-full bg-purple-200 text-purple-900 text-[10px] font-bold font-mono">${ipdBills.length} Stay Invoice${ipdBills.length === 1 ? '' : 's'}</span>
+                <span class="block text-xs font-bold font-mono text-purple-950 mt-0.5">Total: ₹${ipdTotal.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div class="p-3 space-y-2.5">
+        `;
+
+        ipdBills.forEach(b => {
+          html += `
+            <div class="p-3 rounded-xl bg-white border border-purple-100 shadow-xs hover:border-purple-300 transition">
+              <div class="flex items-center justify-between mb-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold font-mono text-slate-900 text-xs">${b.bill_number}</span>
+                  ${b.room_bed_number ? `<span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-[10px] font-bold font-mono">Bed: ${escapeHtml(b.room_bed_number)}</span>` : ''}
+                  <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold ${b.status === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${b.status.toUpperCase()}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-bold font-mono text-slate-900">₹${b.total_amount}</span>
+                  <a href="${b.receipt_url}" target="_blank" class="px-2 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold text-[11px] flex items-center gap-0.5 transition shadow-xs">
+                    <span class="material-symbols-outlined text-[13px]">receipt</span>
+                    <span>Receipt</span>
+                  </a>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-slate-500 mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[13px] text-slate-400">calendar_today</span>
+                  <span>${b.created_at}</span>
+                  ${b.doctor_name ? `<span>· Dr. ${escapeHtml(b.doctor_name)}</span>` : ''}
+                </div>
+                <span class="text-[10px] text-slate-400">${b.items_count} billed item${b.items_count === 1 ? '' : 's'}</span>
+              </div>
+
+              <!-- Item Breakdown inside Bill -->
+              ${b.items && b.items.length > 0 ? `
+                <div class="pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
+                  ${b.items.map(it => `
+                    <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-medium flex items-center gap-1">
+                      <span>${escapeHtml(it.name)}</span>
+                      <strong class="font-mono text-slate-900">(${it.quantity}x · ₹${it.total})</strong>
+                    </span>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        });
+
+        html += `
+            </div>
+          </div>
+        `;
+      }
+
+      // 2. OUTPATIENT (OPD) VISITS SECTION
+      if (opdBills.length > 0 && (activeHistoryFilterType === 'all' || activeHistoryFilterType === 'opd')) {
+        const opdTotal = opdBills.reduce((sum, b) => sum + parseFloat(b.total_amount || 0), 0);
+        html += `
+          <div class="rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden shadow-xs">
+            <div class="p-3 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-teal-700 text-[20px]">medical_services</span>
+                <div>
+                  <h4 class="text-xs font-bold text-slate-900 font-['Plus_Jakarta_Sans'] uppercase tracking-wider">Outpatient (OPD) Consultations & Lab Visits</h4>
+                  <p class="text-[10px] text-slate-500">Day visits, doctor checkups, pharmacy prescriptions & diagnostic tests</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-800 text-[10px] font-bold font-mono">${opdBills.length} Visit${opdBills.length === 1 ? '' : 's'}</span>
+                <span class="block text-xs font-bold font-mono text-slate-900 mt-0.5">Total: ₹${opdTotal.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div class="p-3 space-y-2.5">
+        `;
+
+        opdBills.forEach(b => {
+          html += `
+            <div class="p-3 rounded-xl bg-white border border-slate-200 shadow-xs hover:border-teal-300 transition">
+              <div class="flex items-center justify-between mb-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold font-mono text-slate-900 text-xs">${b.bill_number}</span>
+                  <span class="px-2 py-0.5 rounded bg-teal-50 border border-teal-200 text-teal-800 text-[10px] font-bold">OPD Visit</span>
+                  <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold ${b.status === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${b.status.toUpperCase()}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-bold font-mono text-slate-900">₹${b.total_amount}</span>
+                  <a href="${b.receipt_url}" target="_blank" class="px-2 py-1 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-semibold text-[11px] flex items-center gap-0.5 transition shadow-xs">
+                    <span class="material-symbols-outlined text-[13px]">receipt</span>
+                    <span>Receipt</span>
+                  </a>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-slate-500 mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[13px] text-slate-400">calendar_today</span>
+                  <span>${b.created_at}</span>
+                  ${b.doctor_name ? `<span>· Dr. ${escapeHtml(b.doctor_name)}</span>` : ''}
+                </div>
+                <span class="text-[10px] text-slate-400">${b.items_count} item${b.items_count === 1 ? '' : 's'}</span>
+              </div>
+
+              <!-- Item Breakdown inside Bill -->
+              ${b.items && b.items.length > 0 ? `
+                <div class="pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
+                  ${b.items.map(it => `
+                    <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-medium flex items-center gap-1">
+                      <span>${escapeHtml(it.name)}</span>
+                      <strong class="font-mono text-slate-900">(${it.quantity}x · ₹${it.total})</strong>
+                    </span>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        });
+
+        html += `
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function loadInpatientSummary(patientId) {
+      fetch(`/billing/{{ hospital.slug }}/api/patient-summary/${patientId}/`)
+        .then(res => res.json())
+        .then(data => {
+          const card = document.getElementById('inpatientSummaryCard');
+          if (!card) return;
+
+          if (data.patient && data.patient.is_inpatient) {
+            document.getElementById('ipdRoomBadge').innerText = data.patient.room_bed_number || 'Bed Assigned';
+            document.getElementById('ipdAdmitDateBadge').innerText = 'Admitted: ' + (data.patient.admission_date || '-');
+            document.getElementById('ipdTotalBilled').innerText = '₹' + data.summary.total_billed;
+            document.getElementById('ipdTotalPaid').innerText = '₹' + data.summary.total_paid;
+            document.getElementById('ipdOutstanding').innerText = '₹' + data.summary.outstanding;
+
+            const billsList = document.getElementById('ipdBillsList');
+            if (billsList) {
+              if (data.bills && data.bills.length > 0) {
+                billsList.innerHTML = data.bills.map(b => `
+                  <div class="p-2 rounded-lg bg-white border border-purple-100 flex items-center justify-between text-[11px]">
+                    <div>
+                      <div class="font-bold text-slate-800 font-mono">${b.bill_number}</div>
+                      <div class="text-[10px] text-slate-400">${b.created_at} · ${b.items_count} item(s)</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-bold font-mono text-slate-900">₹${b.total_amount}</span>
+                      <a href="${b.receipt_url}" target="_blank" class="px-2 py-0.5 rounded bg-purple-50 text-purple-700 hover:bg-purple-100 font-semibold text-[10px] flex items-center gap-0.5">
+                        <span class="material-symbols-outlined text-[12px]">description</span>
+                        <span>View</span>
+                      </a>
+                    </div>
+                  </div>
+                `).join('');
+              } else {
+                billsList.innerHTML = `<div class="text-slate-400 text-[10px]">No previous bills in this stay yet.</div>`;
+              }
+            }
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        })
+        .catch(() => {});
+    }
+
+    // Patient Instant Realtime Autocomplete Search & Global Lookup Box
+    let patientSearchTimeout = null;
+    let globalLookupTimeout = null;
+    let highlightedLookupIndex = -1;
+    let highlightedPatientIndex = -1;
+
+    function initPatientSearch() {
+      // 1. Dedicated Global Lookup Box (Search existing by Name, Phone, or ID)
+      const lookupInput = document.getElementById('patientLookupInput');
+      const lookupDropdown = document.getElementById('patientLookupDropdown');
+      const lookupSpinner = document.getElementById('patientLookupSearchingIcon');
+
+      function getVisibleLookupItems() {
+        if (!lookupDropdown || lookupDropdown.classList.contains('hidden')) return [];
+        return Array.from(lookupDropdown.querySelectorAll('.patient-lookup-item'));
+      }
+
+      function highlightLookupSelection() {
+        const items = getVisibleLookupItems();
+        if (items.length === 0) {
+          highlightedLookupIndex = -1;
+          return;
+        }
+        if (highlightedLookupIndex < 0 || highlightedLookupIndex >= items.length) {
+          highlightedLookupIndex = 0;
+        }
+        items.forEach((item, idx) => {
+          if (idx === highlightedLookupIndex) {
+            item.classList.add('bg-teal-100/70');
+            item.scrollIntoView({ block: 'nearest' });
+          } else {
+            item.classList.remove('bg-teal-100/70');
+          }
+        });
+      }
+
+      if (lookupInput) {
+        lookupInput.addEventListener('keydown', (e) => {
+          const items = getVisibleLookupItems();
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (items.length > 0) {
+              highlightedLookupIndex = (highlightedLookupIndex + 1) % items.length;
+              highlightLookupSelection();
+            }
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (items.length > 0) {
+              highlightedLookupIndex = (highlightedLookupIndex - 1 + items.length) % items.length;
+              highlightLookupSelection();
+            }
+          } else if (e.key === 'Enter') {
+            if (items.length > 0) {
+              e.preventDefault();
+              const idx = (highlightedLookupIndex >= 0 && highlightedLookupIndex < items.length) ? highlightedLookupIndex : 0;
+              items[idx].click();
+            }
+          } else if (e.key === 'Escape') {
+            if (lookupDropdown) lookupDropdown.classList.add('hidden');
+          }
+        });
+
+        lookupInput.addEventListener('input', () => {
+          clearTimeout(globalLookupTimeout);
+          const q = lookupInput.value.trim();
+
+          if (q.length < 2) {
+            if (lookupDropdown) lookupDropdown.classList.add('hidden');
+            highlightedLookupIndex = -1;
+            return;
+          }
+
+          if (lookupSpinner) lookupSpinner.classList.remove('hidden');
+
+          globalLookupTimeout = setTimeout(() => {
+            fetch(`/billing/{{ hospital.slug }}/api/search-patients/?q=` + encodeURIComponent(q))
+              .then(res => res.json())
+              .then(data => {
+                if (lookupSpinner) lookupSpinner.classList.add('hidden');
+                if (!lookupDropdown) return;
+
+                if (data.patients && data.patients.length > 0) {
+                  lookupDropdown.innerHTML = data.patients.map(p => `
+                    <div class="patient-lookup-item px-3.5 py-2.5 hover:bg-teal-50/70 cursor-pointer flex items-center justify-between text-xs transition border-b border-slate-50 last:border-0" onclick="selectExistingPatient('${p.id}', '${escapeHtml(p.name)}', '${p.phone}', '${p.age || ''}', '${p.gender}', '${p.patient_id || ''}', ${p.is_inpatient ? 'true' : 'false'}, '${escapeHtml(p.room_bed_number || '')}', '${p.admission_date || ''}', '${p.last_bill_amount || ''}', '${p.last_bill_number || ''}', '${p.last_bill_time || ''}'); document.getElementById('patientLookupDropdown')?.classList.add('hidden'); document.getElementById('patientLookupInput').value = '${escapeHtml(p.name)} (+91 ${p.phone})';">
+                      <div>
+                        <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                          <span class="text-sm">${escapeHtml(p.name)}</span>
+                          ${p.is_inpatient ? `<span class="px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 text-[10px] font-bold">IPD · ${escapeHtml(p.room_bed_number || 'Bed')}</span>` : `<span class="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 text-[10px] font-semibold">OPD</span>`}
+                        </div>
+                        <div class="text-[11px] text-slate-500 font-mono mt-0.5 flex items-center gap-2">
+                          <span>+91 ${p.phone}</span>
+                          ${p.age ? `<span>· ${p.age} yrs (${p.gender})</span>` : ''}
+                        </div>
+                      </div>
+                      <div class="text-right">
+                        ${p.patient_id ? `<span class="px-2 py-0.5 rounded bg-teal-50 border border-teal-200 text-teal-800 font-mono text-xs font-bold">${p.patient_id}</span>` : ''}
+                        <div class="text-[10px] text-teal-600 mt-1 font-semibold flex items-center justify-end gap-0.5">
+                          <span>Select</span>
+                          <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
+                        </div>
+                      </div>
+                    </div>
+                  `).join('');
+                  lookupDropdown.classList.remove('hidden');
+                  highlightedLookupIndex = 0;
+                  highlightLookupSelection();
+                } else {
+                  lookupDropdown.innerHTML = `<div class="p-3 text-center text-xs text-slate-400">No registered patient matched "${escapeHtml(q)}". Continue below to register as a new patient.</div>`;
+                  lookupDropdown.classList.remove('hidden');
+                  highlightedLookupIndex = -1;
+                }
+              })
+              .catch(() => {
+                if (lookupSpinner) lookupSpinner.classList.add('hidden');
+              });
+          }, 200);
+        });
+
+        document.addEventListener('click', (e) => {
+          if (!lookupInput.contains(e.target) && !lookupDropdown?.contains(e.target)) {
+            lookupDropdown?.classList.add('hidden');
+          }
+        });
+      }
+
+      // 2. Name field autocomplete
+      const nameInput = document.getElementById('patientNameInput');
+      const dropdown = document.getElementById('patientDropdown');
+      const spinner = document.getElementById('patientSearchingIcon');
+
+      function getVisiblePatientItems() {
+        if (!dropdown || dropdown.classList.contains('hidden')) return [];
+        return Array.from(dropdown.querySelectorAll('.patient-search-item'));
+      }
+
+      function highlightPatientSelection() {
+        const items = getVisiblePatientItems();
+        if (items.length === 0) {
+          highlightedPatientIndex = -1;
+          return;
+        }
+        if (highlightedPatientIndex < 0 || highlightedPatientIndex >= items.length) {
+          highlightedPatientIndex = 0;
+        }
+        items.forEach((item, idx) => {
+          if (idx === highlightedPatientIndex) {
+            item.classList.add('bg-teal-100/70');
+            item.scrollIntoView({ block: 'nearest' });
+          } else {
+            item.classList.remove('bg-teal-100/70');
+          }
+        });
+      }
+
+      if (!nameInput) return;
+
+      nameInput.addEventListener('keydown', (e) => {
+        const items = getVisiblePatientItems();
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (items.length > 0) {
+            highlightedPatientIndex = (highlightedPatientIndex + 1) % items.length;
+            highlightPatientSelection();
+          }
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (items.length > 0) {
+            highlightedPatientIndex = (highlightedPatientIndex - 1 + items.length) % items.length;
+            highlightPatientSelection();
+          }
+        } else if (e.key === 'Enter') {
+          if (items.length > 0) {
+            e.preventDefault();
+            const idx = (highlightedPatientIndex >= 0 && highlightedPatientIndex < items.length) ? highlightedPatientIndex : 0;
+            items[idx].click();
+          }
+        } else if (e.key === 'Escape') {
+          if (dropdown) dropdown.classList.add('hidden');
+        }
+      });
+
+      nameInput.addEventListener('input', () => {
+        clearTimeout(patientSearchTimeout);
+        const q = nameInput.value.trim();
+
+        if (q.length < 2) {
+          if (dropdown) dropdown.classList.add('hidden');
+          highlightedPatientIndex = -1;
+          return;
+        }
+
+        if (spinner) spinner.classList.remove('hidden');
+
+        patientSearchTimeout = setTimeout(() => {
+          fetch(`/billing/{{ hospital.slug }}/api/search-patients/?q=` + encodeURIComponent(q))
+            .then(res => res.json())
+            .then(data => {
+              if (spinner) spinner.classList.add('hidden');
+              if (!dropdown) return;
+
+              if (data.patients && data.patients.length > 0) {
+                dropdown.innerHTML = data.patients.map(p => `
+                  <div class="patient-search-item px-3 py-2.5 hover:bg-teal-50 cursor-pointer flex items-center justify-between text-xs transition" onclick="selectExistingPatient('${p.id}', '${escapeHtml(p.name)}', '${p.phone}', '${p.age || ''}', '${p.gender}', '${p.patient_id || ''}', ${p.is_inpatient ? 'true' : 'false'}, '${escapeHtml(p.room_bed_number || '')}', '${p.admission_date || ''}', '${p.last_bill_amount || ''}', '${p.last_bill_number || ''}', '${p.last_bill_time || ''}')">
+                    <div>
+                      <div class="font-semibold text-slate-800 flex items-center gap-1.5">
+                        <span>${escapeHtml(p.name)}</span>
+                        ${p.is_inpatient ? `<span class="px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 text-[10px] font-bold">IPD</span>` : ''}
+                      </div>
+                      <div class="text-[11px] text-slate-500 font-mono">+91 ${p.phone}</div>
+                    </div>
+                    <div class="text-right">
+                      ${p.patient_id ? `<span class="px-1.5 py-0.5 rounded bg-teal-50 border border-teal-200 text-teal-700 font-mono text-[10px] font-bold">${p.patient_id}</span>` : ''}
+                      <div class="text-[10px] text-slate-400 mt-0.5">${p.age ? p.age + ' yrs' : ''} ${p.gender || ''}</div>
+                    </div>
+                  </div>
+                `).join('');
+                dropdown.classList.remove('hidden');
+                highlightedPatientIndex = 0;
+                highlightPatientSelection();
+              } else {
+                dropdown.innerHTML = `<div class="p-3 text-center text-xs text-slate-400">No registered patient matched. Continuing as new patient.</div>`;
+                dropdown.classList.remove('hidden');
+                highlightedPatientIndex = -1;
+              }
+            })
+            .catch(() => {
+              if (spinner) spinner.classList.add('hidden');
+            });
+        }, 250);
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!nameInput.contains(e.target) && !dropdown?.contains(e.target)) {
+          dropdown?.classList.add('hidden');
+        }
+      });
+    }
+
+    let currentActiveLastBillAmount = null;
+    let currentActiveLastBillNumber = null;
+    let currentActiveLastBillTime = null;
+    let duplicateConfirmed = false;
+
+    function selectExistingPatient(id, name, phone, age, gender, patientId, isInpatient, roomBed, admissionDate, lastBillAmount = '', lastBillNumber = '', lastBillTime = '') {
+      currentActivePatientId = id;
+      currentActivePatientName = name;
+      currentActiveLastBillAmount = lastBillAmount ? parseFloat(lastBillAmount) : null;
+      currentActiveLastBillNumber = lastBillNumber || null;
+      currentActiveLastBillTime = lastBillTime || null;
+      duplicateConfirmed = false;
+
+      const nameInput = document.getElementById('patientNameInput');
+      const phoneInput = document.getElementById('patientPhoneInput');
+      const ageInput = document.getElementById('patientAgeInput');
+      const genderSelect = document.getElementById('patientGenderSelect');
+      const badge = document.getElementById('patientIdBadge');
+      const dropdown = document.getElementById('patientDropdown');
+
+      if (nameInput) nameInput.value = name;
+      if (phoneInput) phoneInput.value = phone;
+      if (ageInput) ageInput.value = age;
+      if (genderSelect) genderSelect.value = gender || 'M';
+
+      if (badge && patientId) {
+        badge.innerText = patientId;
+        badge.classList.remove('hidden');
+      }
+
+      const cb = document.getElementById('inpatientCheckbox');
+      const roomInput = document.getElementById('roomBedNumberInput');
+      const roomWrapper = document.getElementById('roomBedInputWrapper');
+      const dischargeBtn = document.getElementById('dischargeBtn');
+      const statusPill = document.getElementById('patientStatusPill');
+
+      if (isInpatient) {
+        if (cb) cb.checked = true;
+        if (roomInput) roomInput.value = roomBed || '';
+        if (roomWrapper) roomWrapper.classList.remove('hidden');
+        if (dischargeBtn) dischargeBtn.classList.remove('hidden');
+
+        // Display admission date badge
+        const dateBadgeWrapper = document.getElementById('admissionDateBadgeWrapper');
+        const dateDisplay = document.getElementById('patientAdmissionDateDisplay');
+        if (dateBadgeWrapper && dateDisplay) {
+          if (admissionDate) {
+            dateDisplay.innerText = admissionDate;
+            dateBadgeWrapper.classList.remove('hidden');
+            dateBadgeWrapper.classList.add('flex');
+          } else {
+            dateBadgeWrapper.classList.add('hidden');
+            dateBadgeWrapper.classList.remove('flex');
+          }
+        }
+
+        if (statusPill) {
+          statusPill.innerText = 'INPATIENT · ' + (roomBed || 'Bed Assigned');
+          statusPill.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 border border-purple-200';
+          statusPill.classList.remove('hidden');
+        }
+
+        loadInpatientSummary(id);
+      } else {
+        if (cb) cb.checked = false;
+        if (roomWrapper) roomWrapper.classList.add('hidden');
+        if (dischargeBtn) dischargeBtn.classList.add('hidden');
+        const dateBadgeWrapper = document.getElementById('admissionDateBadgeWrapper');
+        if (dateBadgeWrapper) {
+          dateBadgeWrapper.classList.add('hidden');
+          dateBadgeWrapper.classList.remove('flex');
+        }
+        document.getElementById('inpatientSummaryCard')?.classList.add('hidden');
+
+        if (statusPill) {
+          statusPill.innerText = 'OPD';
+          statusPill.className = 'px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200';
+          statusPill.classList.remove('hidden');
+        }
+      }
+
+      if (dropdown) dropdown.classList.add('hidden');
+
+      // Update Patient Visit History CTA button visibility
+      const historyBtn = document.getElementById('patientHistoryBtn');
+      const historyBadge = document.getElementById('patientHistoryCountBadge');
+      if (historyBtn) {
+        historyBtn.classList.remove('hidden');
+        if (historyBadge) {
+          historyBadge.innerText = 'View History';
+        }
+      }
+
+      validatePatientName(false);
+      validatePatientPhone(false);
+      updateRealtimeState();
+
+      // Scroll smoothly up to the billing form / patient info section
+      const billingForm = document.getElementById('billingForm');
+      if (billingForm) {
+        billingForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      nameInput?.focus();
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    // Initialize patient search when page loads
+    document.addEventListener('DOMContentLoaded', initPatientSearch);
+
+    function handleServiceCheck(serviceId) {
+      const checkbox = document.getElementById('srv_' + serviceId);
+      const qtyInput = document.getElementById('qty_' + serviceId);
+      if (checkbox && qtyInput) {
+        if (!checkbox.checked) {
+          // keep default 1 for next time
+          qtyInput.value = 1;
+        }
+      }
+      // Instantly evaluate selection count and switch button
+      onServiceSelectionChanged();
+    }
+
+    // Custom / Ad-Hoc Miscellaneous Charge Handlers
+    function toggleCustomChargePanel() {
+      const panel = document.getElementById('customChargeFields');
+      const chevron = document.getElementById('customChargeChevron');
+      if (panel) {
+        panel.classList.toggle('hidden');
+        if (chevron) {
+          chevron.style.transform = panel.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+        if (!panel.classList.contains('hidden')) {
+          document.getElementById('customItemName')?.focus();
+        }
+      }
+    }
+
+    function onCustomChargeChanged() {
+      onServiceSelectionChanged();
+    }
+
+    function clearCustomCharge() {
+      const nameInput = document.getElementById('customItemName');
+      const priceInput = document.getElementById('customItemPrice');
+      const qtyInput = document.getElementById('customItemQty');
+      const taxInput = document.getElementById('customItemTax');
+      if (nameInput) nameInput.value = '';
+      if (priceInput) priceInput.value = '';
+      if (qtyInput) qtyInput.value = '1';
+      if (taxInput) taxInput.value = '{{ hospital.default_tax_percent|default:"0.00" }}';
+      onServiceSelectionChanged();
+    }
+
+    function onServiceSelectionChanged() {
+      const selectedCatalog = document.querySelectorAll('.service-checkbox:checked').length;
+      const customName = (document.getElementById('customItemName')?.value || '').trim();
+      const customPrice = parseFloat(document.getElementById('customItemPrice')?.value || 0);
+      const hasCustom = Boolean(customName && customPrice > 0);
+
+      const effectiveSelected = selectedCatalog + (hasCustom ? 1 : 0);
+
+      const counterEl = document.getElementById('selectedServicesCount');
+      if (counterEl) {
+        counterEl.innerText = `${effectiveSelected} selected`;
+      }
+      if (effectiveSelected > 0) {
+        document.getElementById('servicesSelectionError')?.classList.add('hidden');
+      }
+      updateButtonVisibility(effectiveSelected);
+      updateRealtimeState();
+    }
+
+    // Attach listeners on all checkboxes using both 'change' and 'click' events
+    function initServiceCheckboxes() {
+      document.querySelectorAll('.service-checkbox').forEach(cb => {
+        cb.addEventListener('change', onServiceSelectionChanged);
+        cb.addEventListener('click', onServiceSelectionChanged);
+      });
+      // Initial check on load
+      onServiceSelectionChanged();
+    }
+
+    document.addEventListener('DOMContentLoaded', initServiceCheckboxes);
+
+    function updateButtonVisibility(selectedCount) {
+      const saveBtn = document.getElementById('savePatientBtn');
+      const generateBtn = document.getElementById('generateBillBtn');
+
+      if (selectedCount > 0) {
+        // Services are selected -> MUST show Generate Bill & Proceed
+        if (saveBtn) {
+          saveBtn.classList.add('hidden');
+          saveBtn.style.display = 'none';
+        }
+        if (generateBtn) {
+          generateBtn.classList.remove('hidden');
+          generateBtn.style.display = 'flex';
+        }
+      } else {
+        // No services selected -> Show Save Patient Registration
+        if (saveBtn) {
+          saveBtn.classList.remove('hidden');
+          saveBtn.style.display = 'flex';
+        }
+        if (generateBtn) {
+          generateBtn.classList.add('hidden');
+          generateBtn.style.display = 'none';
+        }
+      }
+    }
+
+    // Save Patient Only AJAX Submission
+    function savePatientOnly() {
+      const isNameValid = validatePatientName(true);
+      const isPhoneValid = validatePatientPhone(true);
+
+      if (!isNameValid || !isPhoneValid) {
+        const banner = document.getElementById('formValidationError');
+        const bannerMsg = document.getElementById('formValidationMsg');
+        if (banner) {
+          banner.classList.remove('hidden');
+          bannerMsg.innerText = 'Please provide a valid patient name and 10-digit WhatsApp phone number to save registration.';
+        }
+        return;
+      }
+
+      const saveBtn = document.getElementById('savePatientBtn');
+      const saveBtnText = document.getElementById('savePatientBtnText');
+      const origText = saveBtnText ? saveBtnText.innerText : 'Save Patient';
+
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        if (saveBtnText) saveBtnText.innerText = 'Saving Patient Registration...';
+      }
+
+      const form = document.getElementById('billingForm');
+      const formData = new FormData(form);
+
+      fetch('{% url "billing:save_patient_ajax" hospital.slug %}', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+        },
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          if (saveBtnText) saveBtnText.innerText = origText;
+        }
+
+        if (data.success && data.patient) {
+          currentActivePatientId = data.patient.id;
+          currentActivePatientName = data.patient.name;
+
+          // Update UHID badge
+          const badge = document.getElementById('patientIdBadge');
+          if (badge && data.patient.patient_id) {
+            badge.innerText = data.patient.patient_id;
+            badge.classList.remove('hidden');
+          }
+
+          // Show History CTA button now that patient is registered
+          const historyBtn = document.getElementById('patientHistoryBtn');
+          if (historyBtn) {
+            historyBtn.classList.remove('hidden');
+          }
+
+          // Show success alert
+          const alert = document.getElementById('patientSaveSuccessAlert');
+          const msg = document.getElementById('patientSaveSuccessMsg');
+          if (alert && msg) {
+            const verb = data.created ? 'registered' : 'updated';
+            msg.innerText = `Patient ${data.patient.name} (${data.patient.patient_id || ''}) ${verb} successfully!`;
+            alert.classList.remove('hidden');
+            setTimeout(() => { alert.classList.add('hidden'); }, 5000);
+          }
+
+          // Dynamically prepend to Patient History Directory
+          addPatientToHistoryList(data.patient);
+        } else {
+          alert(data.error || 'Failed to save patient registration.');
+        }
+      })
+      .catch(err => {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          if (saveBtnText) saveBtnText.innerText = origText;
+        }
+        alert('Network error while saving patient registration.');
+      });
+    }
+
+    function addPatientToHistoryList(p) {
+      const historyList = document.getElementById('patientHistoryList');
+      if (!historyList) return;
+
+      const card = document.createElement('div');
+      card.className = 'patient-history-card p-3 rounded-xl border border-teal-200 bg-teal-50/40 hover:bg-teal-50 transition cursor-pointer';
+      card.setAttribute('data-search', `${p.name.toLowerCase()} ${p.phone} ${p.patient_id.toLowerCase()}`);
+      card.onclick = () => selectExistingPatient(p.id, p.name, p.phone, p.age, p.gender, p.patient_id, p.is_inpatient, p.room_bed_number, p.admission_date);
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between mb-1">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="text-xs font-bold text-slate-900 truncate">${escapeHtml(p.name)}</span>
+            ${p.patient_id ? `<span class="px-1.5 py-0.2 rounded bg-teal-50 border border-teal-200 text-teal-800 font-mono text-[10px] font-bold">${p.patient_id}</span>` : ''}
+          </div>
+          <div>
+            ${p.is_inpatient 
+              ? `<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200 text-[10px] font-bold">IPD · ${escapeHtml(p.room_bed_number || 'Bed')}</span>` 
+              : `<span class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-medium">OPD</span>`}
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-slate-500">
+          <span class="font-mono">+91 ${p.phone}</span>
+          <span class="text-teal-700 font-semibold text-[10px]">Just Registered</span>
+        </div>
+      `;
+
+      historyList.prepend(card);
+    }
+
+    // Real-Time & Submit-Time Validation
+    function updateRealtimeState() {
+      const nameInput = document.getElementById('patientNameInput');
+      const nameVal = nameInput ? nameInput.value.trim() : '';
+      const phoneInput = document.getElementById('patientPhoneInput');
+      const phoneVal = phoneInput ? phoneInput.value.trim() : '';
+      const phoneRegex = /^[0-9]{10}$/;
+      const selectedServices = document.querySelectorAll('.service-checkbox:checked').length;
+      const customName = (document.getElementById('customItemName')?.value || '').trim();
+      const customPrice = parseFloat(document.getElementById('customItemPrice')?.value || 0);
+      const hasCustom = Boolean(customName && customPrice > 0);
+      const effectiveSelected = selectedServices + (hasCustom ? 1 : 0);
+
+      const submitBtn = document.getElementById('generateBillBtn');
+      const banner = document.getElementById('formValidationError');
+
+      const isNameValid = nameVal.length > 0;
+      const isPhoneValid = phoneRegex.test(phoneVal);
+      const isServiceValid = effectiveSelected > 0;
+
+      updateButtonVisibility(effectiveSelected);
+
+      if (isNameValid && isPhoneValid && isServiceValid) {
+        if (banner) banner.classList.add('hidden');
+        if (submitBtn) {
+          submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+        }
+      }
+    }
+
+    function validatePatientName(showError = true) {
+      const nameInput = document.getElementById('patientNameInput');
+      const nameVal = nameInput ? nameInput.value.trim() : '';
+      const nameErr = document.getElementById('patientNameError');
+      if (!nameVal) {
+        if (showError) {
+          nameErr?.classList.remove('hidden');
+          nameInput?.classList.add('border-rose-400', 'bg-rose-50/20');
+          nameInput?.classList.remove('border-slate-300', 'bg-slate-50');
+        }
+        return false;
+      } else {
+        nameErr?.classList.add('hidden');
+        nameInput?.classList.remove('border-rose-400', 'bg-rose-50/20');
+        nameInput?.classList.add('border-emerald-400', 'bg-emerald-50/10');
+        return true;
+      }
+    }
+
+    function validatePatientPhone(showError = true) {
+      const phoneInput = document.getElementById('patientPhoneInput');
+      const phoneVal = phoneInput ? phoneInput.value.trim() : '';
+      const phoneErr = document.getElementById('patientPhoneError');
+      const phoneRegex = /^[0-9]{10}$/;
+      if (!phoneRegex.test(phoneVal)) {
+        if (showError) {
+          phoneErr?.classList.remove('hidden');
+          phoneInput?.classList.add('border-rose-400', 'bg-rose-50/20');
+          phoneInput?.classList.remove('border-slate-300', 'bg-slate-50');
+        }
+        return false;
+      } else {
+        phoneErr?.classList.add('hidden');
+        phoneInput?.classList.remove('border-rose-400', 'bg-rose-50/20');
+        phoneInput?.classList.add('border-emerald-400', 'bg-emerald-50/10');
+        return true;
+      }
+    }
+
+    function validateServices(showError = true) {
+      const selected = document.querySelectorAll('.service-checkbox:checked').length;
+      const customName = (document.getElementById('customItemName')?.value || '').trim();
+      const customPrice = parseFloat(document.getElementById('customItemPrice')?.value || 0);
+      const hasCustom = Boolean(customName && customPrice > 0);
+      const effectiveSelected = selected + (hasCustom ? 1 : 0);
+
+      const srvErr = document.getElementById('servicesSelectionError');
+      if (effectiveSelected === 0) {
+        if (showError) srvErr?.classList.remove('hidden');
+        return false;
+      } else {
+        srvErr?.classList.add('hidden');
+        return true;
+      }
+    }
+
+    function calculateCurrentBillEstimate() {
+      let total = 0;
+      document.querySelectorAll('.service-checkbox:checked').forEach(cb => {
+        const price = parseFloat(cb.getAttribute('data-price') || 0);
+        const srvId = cb.value;
+        const qtyEl = document.getElementById('qty_' + srvId);
+        const qty = qtyEl ? (parseInt(qtyEl.value, 10) || 1) : 1;
+        total += (price * qty);
+      });
+
+      const customName = (document.getElementById('customItemName')?.value || '').trim();
+      const customPrice = parseFloat(document.getElementById('customItemPrice')?.value || 0);
+      if (customName && customPrice > 0) {
+        const customQty = parseInt(document.getElementById('customItemQty')?.value, 10) || 1;
+        total += (customPrice * customQty);
+      }
+
+      return total;
+    }
+
+    function cancelDuplicateBill() {
+      document.getElementById('duplicateBillConfirmModal')?.classList.add('hidden');
+      document.getElementById('duplicateBillConfirmModal')?.classList.remove('flex');
+    }
+
+    function confirmDuplicateBill() {
+      duplicateConfirmed = true;
+      document.getElementById('duplicateBillConfirmModal')?.classList.add('hidden');
+      document.getElementById('duplicateBillConfirmModal')?.classList.remove('flex');
+      const form = document.getElementById('billingForm');
+      if (form) form.submit();
+    }
+
+    function validateBillingForm(e) {
+      const isNameValid = validatePatientName(true);
+      const isPhoneValid = validatePatientPhone(true);
+      const isServicesValid = validateServices(true);
+
+      const isValid = isNameValid && isPhoneValid && isServicesValid;
+
+      const banner = document.getElementById('formValidationError');
+      const bannerMsg = document.getElementById('formValidationMsg');
+
+      if (!isValid) {
+        if (e) e.preventDefault();
+        if (banner) {
+          banner.classList.remove('hidden');
+          if (!isServicesValid && isNameValid && isPhoneValid) {
+            bannerMsg.innerText = 'Please select at least one service, procedure, or tariff item.';
+          } else if (!isNameValid || !isPhoneValid) {
+            bannerMsg.innerText = 'Please provide a valid patient name and 10-digit WhatsApp phone number.';
+          } else {
+            bannerMsg.innerText = 'Please complete all required fields before generating the invoice.';
+          }
+        }
+
+        let firstError = null;
+        if (!isNameValid) firstError = document.getElementById('patientNameInput');
+        else if (!isPhoneValid) firstError = document.getElementById('patientPhoneInput');
+        else if (!isServicesValid) firstError = document.getElementById('servicesGrid');
+
+        if (firstError) {
+          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (firstError.focus) firstError.focus();
+        }
+        return false;
+      }
+
+      // Check for duplicate billing (same amount as recent bill for this patient)
+      if (!duplicateConfirmed && currentActiveLastBillAmount !== null) {
+        const estTotal = calculateCurrentBillEstimate();
+        // Compare with tolerance of 0.01
+        if (Math.abs(estTotal - currentActiveLastBillAmount) < 0.01) {
+          if (e) e.preventDefault();
+          const amtEl = document.getElementById('duplicateBillAmount');
+          const nameEl = document.getElementById('duplicatePatientName');
+          const numEl = document.getElementById('duplicateBillNumber');
+          const timeEl = document.getElementById('duplicateBillTime');
+
+          if (amtEl) amtEl.innerText = `₹${estTotal.toFixed(2)}`;
+          if (nameEl) nameEl.innerText = document.getElementById('patientNameInput')?.value.trim() || 'this patient';
+          if (numEl) numEl.innerText = currentActiveLastBillNumber ? `Bill #${currentActiveLastBillNumber}` : 'a previous bill';
+          if (timeEl) timeEl.innerText = currentActiveLastBillTime ? `generated on ${currentActiveLastBillTime}` : '';
+
+          document.getElementById('duplicateBillConfirmModal')?.classList.remove('hidden');
+          document.getElementById('duplicateBillConfirmModal')?.classList.add('flex');
+          return false;
+        }
+      }
+
+      if (banner) banner.classList.add('hidden');
+      return true;
+    }
+
+    // Attach Live Listeners for Instant Feedback
+    const nameInputEl = document.getElementById('patientNameInput');
+    if (nameInputEl) {
+      nameInputEl.addEventListener('input', () => {
+        validatePatientName(nameInputEl.value.trim().length > 0);
+        updateRealtimeState();
+      });
+      nameInputEl.addEventListener('blur', () => {
+        validatePatientName(true);
+        updateRealtimeState();
+      });
+    }
+
+    const phoneInputEl = document.getElementById('patientPhoneInput');
+    if (phoneInputEl) {
+      phoneInputEl.addEventListener('input', () => {
+        // Strip non-digits
+        phoneInputEl.value = phoneInputEl.value.replace(/[^0-9]/g, '');
+        if (phoneInputEl.value.length === 10) {
+          validatePatientPhone(true);
+        } else if (phoneInputEl.value.length > 0) {
+          phoneInputEl.classList.remove('border-emerald-400');
+        }
+        updateRealtimeState();
+      });
+      phoneInputEl.addEventListener('blur', () => {
+        validatePatientPhone(true);
+        updateRealtimeState();
+      });
+    }
+  </script>
+</body>
+</html>

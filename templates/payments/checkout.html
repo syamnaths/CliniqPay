@@ -1,0 +1,190 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Collect Payment — Invoice {{ bill.bill_number }}</title>
+  <link rel="icon" type="image/png" href="{% static 'images/original-icon-mark.png' %}"/>
+  <script src="{% static 'vendor/tailwind.min.js' %}"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  {% include 'includes/theme_head.html' %}
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-['Inter'] min-h-screen py-8 px-4 flex items-center justify-center transition-colors">
+  <div class="max-w-3xl w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl transition-colors">
+    
+    <!-- Top Header -->
+    <div class="flex items-center justify-between pb-6 mb-6 border-b border-slate-200 dark:border-slate-800">
+      <div class="flex items-center gap-3">
+        <!-- Mobile: Mark icon only -->
+        <img src="{% static 'images/original-icon-mark.png' %}" alt="Cliniqpay Logo" class="h-8 w-auto object-contain sm:hidden"/>
+        <!-- Tablet & Desktop: Full stacked logo -->
+        <img src="{% static 'images/original-staked.png' %}" alt="Cliniqpay Logo" class="hidden sm:inline-block h-9 w-auto object-contain"/>
+        <div>
+          <h1 class="text-base font-bold font-['Plus_Jakarta_Sans'] text-slate-900 dark:text-white">{{ hospital.name }} · Payment Counter</h1>
+          <span class="text-xs text-slate-500 dark:text-slate-400">Invoice: <strong class="text-teal-700 dark:text-teal-400 font-mono">{{ bill.bill_number }}</strong></span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        {% include 'includes/theme_toggle_btn.html' %}
+        <div class="text-right">
+          <span class="text-xs text-slate-400 block uppercase">Amount Due</span>
+          <span class="text-2xl font-black font-mono text-teal-700 dark:text-teal-400">₹{{ bill.total_amount }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Patient Banner -->
+    <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-6 flex items-center justify-between text-xs">
+      <div>
+        <div class="flex items-center gap-2 mb-0.5">
+          <span class="text-slate-400 text-[10px] uppercase font-bold block">Patient</span>
+          {% if bill.patient.patient_id %}
+          <span class="px-1.5 py-0.2 rounded bg-teal-100 text-teal-800 font-mono font-bold text-[10px]">{{ bill.patient.patient_id }}</span>
+          {% endif %}
+          {% if bill.is_discharge_bill %}
+          <span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold text-[10px] border border-rose-200">
+            FINAL DISCHARGE INVOICE · {{ bill.room_bed_number|default:"Inpatient Stay" }}
+          </span>
+          {% elif bill.bill_type == 'ipd' %}
+          <span class="px-2 py-0.2 rounded-full bg-purple-100 text-purple-800 font-bold text-[10px]">
+            INPATIENT · {{ bill.room_bed_number|default:"Bed Assigned" }}
+          </span>
+          {% else %}
+          <span class="px-2 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px] font-medium">OPD</span>
+          {% endif %}
+        </div>
+        <strong class="text-slate-900 text-sm">{{ bill.patient.name }}</strong>
+        <span class="text-slate-500 block">+91 {{ bill.patient.phone }}</span>
+        {% if bill.billed_by %}
+        <span class="text-[11px] text-teal-800 font-medium block mt-1">Billed by: {{ bill.billed_by }}</span>
+        {% endif %}
+      </div>
+      <div class="text-right">
+        <span class="text-slate-400 text-[10px] uppercase font-bold block">Doctor / Department</span>
+        <span class="text-slate-800 font-semibold">{{ bill.doctor.full_name|default:"General OPD" }}</span>
+        {% if bill.bill_type == 'ipd' and bill.room_bed_number %}
+        <span class="text-purple-700 font-mono text-[11px] block mt-0.5 font-bold">Bed: {{ bill.room_bed_number }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 2 Payment Channels (UPI vs Cash) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+      
+      <!-- CHANNEL 1: Dynamic On-Screen UPI QR -->
+      <div class="bg-gradient-to-b from-teal-50/50 to-white border-2 border-teal-500/30 rounded-2xl p-6 flex flex-col justify-between text-center shadow-sm">
+        <div>
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-100 text-teal-800 text-xs font-semibold mb-3">
+            <span class="w-2 h-2 rounded-full bg-teal-600 animate-ping"></span>
+            Dynamic UPI QR Ready
+          </div>
+          <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Scan with Google Pay / PhonePe / Paytm</h3>
+          <p class="text-xs text-slate-500 mt-1 mb-4">Exact amount ₹{{ bill.total_amount }} embedded. No manual entry needed.</p>
+
+          <!-- Real Dynamic QR Image -->
+          <div class="bg-white p-3 rounded-xl border border-slate-200 inline-block shadow-inner mx-auto mb-3">
+            <img src="{{ qr_code_url }}" alt="Dynamic UPI QR Code" class="w-48 h-48 object-contain mx-auto"/>
+          </div>
+
+          <div class="text-[11px] text-slate-500 font-mono mt-3">
+            Target VPA: <strong class="text-slate-800">{{ hospital.upi_id|default:"bnv@upi" }}</strong>
+            {% if hospital.upi_gateway_provider == 'youpi' %}
+            <span class="block text-[10px] text-indigo-700 font-semibold mt-0.5">
+              Powered by YouPI-PG {% if youpi_session.is_mock %}(Sandbox Active){% else %}(Live Gateway){% endif %}
+            </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="mt-4 space-y-2">
+          {% if hospital.upi_gateway_provider == 'youpi' %}
+          <!-- YouPI-PG Sandbox Simulator CTA for instant test confirmation -->
+          <a href="{% url 'payments:youpi_test_simulate' hospital.slug bill.bill_number %}" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px]">verified</span>
+            <span>Simulate YouPI Observer Webhook (Test Payment)</span>
+          </a>
+          {% endif %}
+
+          <form action="{% url 'payments:confirm_upi' hospital.slug bill.bill_number %}" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="utr_number" value="UPI{{ bill.bill_number }}">
+            <button type="submit" class="w-full py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
+              <span class="material-symbols-outlined text-[15px]">check_circle</span>
+              <span>Manual Cashier Confirmation</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- CHANNEL 2: Cash Recording -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col justify-between shadow-sm">
+        <div>
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-3">
+            <span class="material-symbols-outlined text-[14px]">payments</span>
+            Physical Cash Counter
+          </div>
+          <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Record Cash Deposit</h3>
+          <p class="text-xs text-slate-500 mt-1 mb-4">Patient paying physical currency note at counter.</p>
+
+          <form id="cashForm" action="{% url 'payments:record_cash' hospital.slug bill.bill_number %}" method="POST" class="space-y-4 text-xs text-left">
+            {% csrf_token %}
+            <div>
+              <label class="block text-slate-600 font-medium mb-1">Cash Tendered by Patient (₹)</label>
+              <input type="number" step="1" name="cash_tendered" id="cashTendered" value="{{ bill.total_amount }}" min="{{ bill.total_amount }}" required
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-bold font-mono focus:outline-none focus:border-teal-500">
+            </div>
+
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+              <div class="flex justify-between text-slate-500">
+                <span>Bill Total:</span>
+                <span class="font-mono font-bold text-slate-800">₹{{ bill.total_amount }}</span>
+              </div>
+              <div class="flex justify-between text-teal-700 font-bold">
+                <span>Change to Return:</span>
+                <span id="cashChange" class="font-mono text-sm">₹0.00</span>
+              </div>
+            </div>
+
+            <button type="submit" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px]">point_of_sale</span>
+              <span>Record Cash & Confirm</span>
+            </button>
+          </form>
+        </div>
+
+        <div class="pt-4 text-center">
+          <a href="{% url 'billing:counter' hospital.slug %}" class="text-xs text-slate-400 hover:text-slate-600">
+            &larr; Back to Cashier Desk
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const billAmount = parseFloat("{{ bill.total_amount }}");
+    const tenderedInput = document.getElementById('cashTendered');
+    const changeOutput = document.getElementById('cashChange');
+
+    if (tenderedInput && changeOutput) {
+      tenderedInput.addEventListener('input', () => {
+        const tendered = parseFloat(tenderedInput.value) || 0;
+        const change = Math.max(0, tendered - billAmount);
+        changeOutput.innerText = '₹' + change.toFixed(2);
+      });
+    }
+
+    function copyPatientUrl() {
+      const input = document.getElementById('patientUrlInput');
+      navigator.clipboard.writeText(input.value).then(() => {
+        const btn = document.getElementById('copyUrlBtn');
+        btn.innerText = 'Copied!';
+        setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>{{ hospital.name }} — Patient Counter Display</title>
+  <link rel="icon" type="image/png" href="{% static 'images/original-icon-mark.png' %}"/>
+  <script src="{% static 'vendor/tailwind.min.js' %}"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <!-- Auto-poll preserving display token in query string -->
+  <meta http-equiv="refresh" content="3;url={{ request.get_full_path }}">
+  <style>
+    /* Support 100dvh for modern mobile/tablet address bars without jumping */
+    .viewport-container {
+      min-height: 100vh;
+      min-height: 100dvh;
+      max-height: 100dvh;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-['Inter'] viewport-container flex flex-col justify-between p-4 sm:p-6 lg:p-8 select-none overflow-hidden">
+  
+  <!-- Header: Compact, never eats excess vertical space -->
+  <header class="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-800/80 flex-shrink-0">
+    <div class="flex items-center gap-3">
+      {% if hospital.logo %}
+      <div class="w-10 h-10 sm:w-12 sm:h-12 p-1 bg-white/10 backdrop-blur-xs rounded-xl border border-slate-800 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
+        <img src="{{ hospital.logo.url }}" alt="{{ hospital.name }} Logo" class="w-full h-full rounded-lg object-contain">
+      </div>
+      {% else %}
+      <img src="{% static 'images/original-staked.png' %}" alt="Cliniqpay Logo" class="h-8 sm:h-10 w-auto object-contain"/>
+      {% endif %}
+      <div class="h-6 w-px bg-slate-800"></div>
+      <div>
+        <h1 class="text-base sm:text-lg font-bold font-['Plus_Jakarta_Sans'] text-white leading-tight truncate max-w-[200px] sm:max-w-md">{{ hospital.name }}</h1>
+        <span class="text-[11px] {% if counter_type == 'pharmacy' %}text-emerald-400{% else %}text-teal-400{% endif %} font-medium tracking-wide">
+          {% if counter_type == 'pharmacy' %}Pharmacy Dispensary Display{% else %}Patient Counter Display{% endif %}
+        </span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-full">
+      <span class="w-2 h-2 rounded-full {% if counter_type == 'pharmacy' %}bg-emerald-400{% else %}bg-teal-400{% endif %} animate-ping"></span>
+      <span class="text-[11px] text-slate-300 font-medium tracking-wider uppercase">
+        {% if counter_type == 'pharmacy' %}Pharmacy Terminal{% else %}Live Counter{% endif %}
+      </span>
+    </div>
+  </header>
+
+  <!-- Main Center Display Area: Height-responsive, flexible centering -->
+  <main class="flex-1 flex items-center justify-center py-2 sm:py-4 overflow-y-auto">
+    {% if active_bill %}
+      <!-- State: Active Unpaid Bill with Dynamic UPI QR Code (Height friendly layout) -->
+      <div class="max-w-3xl w-full grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-8 items-center bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-8 shadow-2xl my-auto">
+        
+        <!-- Left: Bill Details -->
+        <div class="md:col-span-6 space-y-3 sm:space-y-4 text-left">
+          <div>
+            <span class="px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 text-[11px] font-semibold uppercase tracking-wider">
+              Current Bill
+            </span>
+            <h2 class="text-xl sm:text-2xl font-bold font-['Plus_Jakarta_Sans'] text-white mt-1.5 leading-tight truncate">{{ active_bill.patient.name }}</h2>
+            <span class="text-xs text-slate-400 font-['JetBrains_Mono']">Invoice: <strong class="text-teal-400">{{ active_bill.bill_number }}</strong></span>
+          </div>
+
+          <div class="bg-slate-950/80 p-3 sm:p-4 rounded-2xl border border-slate-800">
+            <span class="text-[10px] sm:text-[11px] text-slate-400 block uppercase tracking-wider font-semibold">Total Amount Due</span>
+            <div class="text-3xl sm:text-5xl font-black font-['JetBrains_Mono'] text-teal-400 leading-tight">₹{{ active_bill.total_amount }}</div>
+            <div class="text-[11px] sm:text-xs text-slate-400 pt-1 truncate">
+              Consultant: <strong class="text-slate-200">{{ active_bill.doctor.full_name|default:"General OPD" }}</strong>
+            </div>
+          </div>
+
+          <div class="text-xs text-slate-400 space-y-1">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-teal-400 text-[16px]">verified</span>
+              <span class="truncate">UPI VPA: <strong class="text-slate-200 font-mono">{{ hospital.upi_id|default:"bnv@upi" }}</strong></span>
+            </div>
+            <p class="text-[10px] sm:text-[11px] text-slate-500">Scan using Google Pay, PhonePe, Paytm, or any UPI app.</p>
+          </div>
+        </div>
+
+        <!-- Right: Scannable Dynamic QR Code (Viewport-height responsive) -->
+        <div class="md:col-span-6 text-center flex flex-col items-center justify-center">
+          <div class="bg-white p-3 sm:p-4 rounded-2xl sm:rounded-3xl border-4 border-teal-500/40 inline-block shadow-2xl">
+            <img src="{{ qr_code_url }}" alt="Scan UPI QR" class="w-44 h-44 sm:w-56 sm:h-56 lg:w-60 lg:h-60 max-h-[36vh] object-contain mx-auto"/>
+          </div>
+          
+          <div class="mt-3 flex items-center justify-center gap-2 sm:gap-3 text-[11px] text-slate-400 font-medium">
+            <span>GPay</span>
+            <span>·</span>
+            <span>PhonePe</span>
+            <span>·</span>
+            <span>Paytm</span>
+            <span>·</span>
+            <span>BHIM</span>
+          </div>
+        </div>
+
+      </div>
+    {% elif recent_paid_bill %}
+      <!-- State: Just Paid Brief Confirmation (shown for 8s after cashier confirmation) -->
+      <div class="max-w-md w-full bg-slate-900 border border-teal-500/30 rounded-3xl p-6 sm:p-8 text-center shadow-2xl my-auto animate-fade-in">
+        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-teal-500/20 text-teal-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-teal-500/40">
+          <svg class="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+        </div>
+        <span class="px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/40 text-xs font-bold uppercase tracking-wider">
+          Payment Received
+        </span>
+        <h2 class="text-4xl sm:text-5xl font-black font-['JetBrains_Mono'] text-white mt-3 mb-1">₹{{ recent_paid_bill.total_amount }}</h2>
+        <p class="text-sm text-slate-300 font-medium">Thank you, <strong class="text-teal-300">{{ recent_paid_bill.patient.name }}</strong></p>
+        <p class="text-xs text-slate-400 mt-2">Receipt has been issued & notified to your phone.</p>
+        <div class="mt-4 text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-slate-500 animate-pulse"></span>
+          <span>Switching to next patient in seconds...</span>
+        </div>
+      </div>
+    {% else %}
+      <!-- Warm, Beautiful Welcome & Counter Ready Screen for Patients -->
+      <div class="max-w-lg w-full bg-slate-900/80 border border-slate-800/80 rounded-3xl p-6 sm:p-10 text-center shadow-2xl my-auto backdrop-blur">
+        
+        <!-- Hospital Heart / Healing Emblem -->
+        <div class="w-20 h-20 bg-gradient-to-tr from-teal-500/20 to-teal-400/10 text-teal-400 rounded-3xl flex items-center justify-center mx-auto mb-5 border border-teal-500/30 shadow-inner">
+          <span class="material-symbols-outlined text-[42px]">favorite</span>
+        </div>
+
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-xs font-semibold mb-3">
+          <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+          <span>Counter Ready · Instant Digital Billing</span>
+        </span>
+
+        <h2 class="text-2xl sm:text-3xl font-bold font-['Plus_Jakarta_Sans'] text-white leading-tight">
+          Welcome to {{ hospital.name }}
+        </h2>
+        
+        <p class="text-xs sm:text-sm text-slate-400 mt-2.5 max-w-sm mx-auto leading-relaxed">
+          We wish you good health and a speedy recovery. Your bill & UPI payment QR will appear here in seconds.
+        </p>
+
+        <!-- Accepted UPI & Payment Badges -->
+        <div class="mt-8 pt-6 border-t border-slate-800/80">
+          <span class="text-[10px] text-slate-500 uppercase tracking-widest font-semibold block mb-3">
+            Fast, Exact-Amount UPI Payments Accepted
+          </span>
+          <div class="flex items-center justify-center gap-4 text-xs text-slate-400 font-medium">
+            <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-teal-400"></span> Google Pay</span>
+            <span class="text-slate-700">|</span>
+            <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-teal-400"></span> PhonePe</span>
+            <span class="text-slate-700">|</span>
+            <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-teal-400"></span> Paytm</span>
+            <span class="text-slate-700">|</span>
+            <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-teal-400"></span> BHIM UPI</span>
+          </div>
+        </div>
+
+      </div>
+    {% endif %}
+  </main>
+
+  <!-- Footer: Ultra compact -->
+  <footer class="pt-3 sm:pt-4 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500 flex-shrink-0">
+    <div class="flex items-center gap-1.5">
+      <span class="material-symbols-outlined text-[14px] text-teal-500">lock</span>
+      <span>Secured Counter Terminal · {{ hospital.city }}, {{ hospital.state }}</span>
+    </div>
+    <div>Powered by CliniqPay</div>
+  </footer>
+
+</body>
+</html>

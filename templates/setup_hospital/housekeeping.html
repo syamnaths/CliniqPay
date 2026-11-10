@@ -1,0 +1,466 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ hospital.name }} — Housekeeping & Room Sanitization</title>
+  <link rel="icon" type="image/png" href="{% static 'images/original-icon-mark.png' %}"/>
+  <script src="{% static 'vendor/tailwind.min.js' %}"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  {% include 'includes/theme_head.html' %}
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-['Inter'] min-h-screen transition-colors flex flex-col">
+  <!-- Top Workspace Nav -->
+  <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-sm transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 sm:py-0 sm:h-16 flex flex-wrap items-center justify-between gap-y-2">
+      <div class="flex items-center gap-3 sm:gap-4">
+        <!-- Hospital Brand Logo & System Link -->
+        <a href="{% url 'setup_hospital:housekeeping_dashboard' hospital.slug %}" class="flex items-center gap-2.5">
+          {% if hospital.logo %}
+          <div class="w-9 h-9 sm:w-10 sm:h-10 p-1 bg-white dark:bg-white/10 dark:backdrop-blur-xs rounded-xl border border-slate-200 dark:border-slate-700/80 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+            <img src="{{ hospital.logo.url }}" alt="{{ hospital.name }} Logo" class="w-full h-full rounded-lg object-contain">
+          </div>
+          {% else %}
+          <img src="{% static 'images/original-icon-mark.png' %}" alt="Cliniqpay Logo" class="h-8 w-auto object-contain sm:hidden"/>
+          <img src="{% static 'images/original-staked.png' %}" alt="Cliniqpay Logo" class="hidden sm:inline-block h-10 w-auto object-contain"/>
+          {% endif %}
+        </a>
+        <div class="h-6 w-px bg-slate-200 dark:bg-slate-800"></div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white font-['Plus_Jakarta_Sans'] leading-tight">{{ hospital.name }}</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+              Housekeeping Desk
+            </span>
+          </div>
+          <span class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 block leading-none mt-0.5">
+            Logged in as: <strong class="text-slate-700 dark:text-slate-300">{{ request.user.first_name|default:request.user.username }}</strong> ({{ staff_role|title }})
+          </span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+        {% include 'includes/theme_toggle_btn.html' %}
+
+        {% if staff_role == 'admin' %}
+        <a href="{% url 'setup_hospital:dashboard' hospital.slug %}" class="px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] sm:text-xs font-semibold flex items-center gap-1 transition">
+          <span class="material-symbols-outlined text-[15px] sm:text-[16px]">settings</span>
+          <span>Admin Setup</span>
+        </a>
+        <a href="{% url 'billing:counter' hospital.slug %}" class="px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] sm:text-xs font-semibold flex items-center gap-1 transition">
+          <span class="material-symbols-outlined text-[15px] sm:text-[16px]">point_of_sale</span>
+          <span>Cashier Desk</span>
+        </a>
+        {% endif %}
+
+        <a href="{% url 'setup_hospital:logout' hospital.slug %}" class="text-[11px] sm:text-xs font-medium px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+          Sign Out
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 w-full">
+    <!-- Messages Notification -->
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+      {% for message in messages %}
+      <div class="p-3.5 sm:p-4 rounded-xl flex items-start gap-3 shadow-sm border text-xs font-semibold
+        {% if message.tags == 'error' %}
+          bg-rose-50 border-rose-200 text-rose-900
+        {% elif message.tags == 'warning' %}
+          bg-amber-50 border-amber-200 text-amber-900
+        {% else %}
+          bg-emerald-50 border-emerald-200 text-emerald-900
+        {% endif %}">
+        <span class="material-symbols-outlined text-[18px] shrink-0 mt-0.5
+          {% if message.tags == 'error' %}text-rose-600{% elif message.tags == 'warning' %}text-amber-600{% else %}text-emerald-600{% endif %}">
+          {% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}check_circle{% endif %}
+        </span>
+        <div class="flex-1">
+          <p>{{ message }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Top KPI Dashboard Summary Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+      <!-- Needs Cleaning KPI -->
+      <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 rounded-2xl p-4 sm:p-5 flex items-center justify-between">
+        <div>
+          <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 block mb-0.5">Needs Cleaning</span>
+          <span class="text-2xl sm:text-3xl font-extrabold text-amber-900 dark:text-amber-200 font-mono" id="kpiCleaningCount">{{ cleaning_count }}</span>
+          <span class="text-[10px] text-amber-600 dark:text-amber-500 block mt-0.5 font-medium">Pending Sanitization</span>
+        </div>
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[24px] sm:text-[28px]">cleaning_services</span>
+        </div>
+      </div>
+
+      <!-- Occupied Rooms KPI -->
+      <div class="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/60 rounded-2xl p-4 sm:p-5 flex items-center justify-between">
+        <div>
+          <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 block mb-0.5">Occupied</span>
+          <span class="text-2xl sm:text-3xl font-extrabold text-blue-900 dark:text-blue-200 font-mono">{{ occupied_count }}</span>
+          <span class="text-[10px] text-blue-600 dark:text-blue-500 block mt-0.5 font-medium">Active Inpatients</span>
+        </div>
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[24px] sm:text-[28px]">hotel</span>
+        </div>
+      </div>
+
+      <!-- Ready & Available KPI -->
+      <div class="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/60 rounded-2xl p-4 sm:p-5 flex items-center justify-between">
+        <div>
+          <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 block mb-0.5">Ready / Available</span>
+          <span class="text-2xl sm:text-3xl font-extrabold text-emerald-900 dark:text-emerald-200 font-mono" id="kpiAvailableCount">{{ available_count }}</span>
+          <span class="text-[10px] text-emerald-600 dark:text-emerald-500 block mt-0.5 font-medium">Ready for Admission</span>
+        </div>
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[24px] sm:text-[28px]">task_alt</span>
+        </div>
+      </div>
+
+      <!-- Total Managed Rooms -->
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-2xs">
+        <div>
+          <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-0.5">Total Rooms</span>
+          <span class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white font-mono">{{ total_count }}</span>
+          <span class="text-[10px] text-slate-400 block mt-0.5 font-medium">Configured Beds</span>
+        </div>
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[24px] sm:text-[28px]">domain</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Bar & Search Controls -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 mb-6 shadow-2xs">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <!-- Filter Tabs -->
+        <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl text-xs overflow-x-auto">
+          <button type="button" onclick="setHousekeepingFilter('all')" class="hk-filter-btn px-3 py-1.5 rounded-lg font-semibold transition shrink-0 bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs" data-filter="all">
+            All Rooms ({{ total_count }})
+          </button>
+          <button type="button" onclick="setHousekeepingFilter('cleaning')" class="hk-filter-btn px-3 py-1.5 rounded-lg font-semibold transition shrink-0 text-amber-700 dark:text-amber-400 hover:bg-white/60 dark:hover:bg-slate-700/60" data-filter="cleaning">
+            Needs Cleaning ({{ cleaning_count }})
+          </button>
+          <button type="button" onclick="setHousekeepingFilter('available')" class="hk-filter-btn px-3 py-1.5 rounded-lg font-semibold transition shrink-0 text-emerald-700 dark:text-emerald-400 hover:bg-white/60 dark:hover:bg-slate-700/60" data-filter="available">
+            Ready & Available ({{ available_count }})
+          </button>
+          <button type="button" onclick="setHousekeepingFilter('occupied')" class="hk-filter-btn px-3 py-1.5 rounded-lg font-semibold transition shrink-0 text-blue-700 dark:text-blue-400 hover:bg-white/60 dark:hover:bg-slate-700/60" data-filter="occupied">
+            Occupied ({{ occupied_count }})
+          </button>
+        </div>
+
+        <!-- Search Input -->
+        <div class="relative w-full sm:w-64">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+          <input type="text" id="roomSearchInput" oninput="filterRoomsList()" placeholder="Search room or ward..." class="w-full pl-9 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500">
+        </div>
+      </div>
+    </div>
+
+    <!-- Urgent Section: Rooms Requiring Cleaning (Sticky Banner when > 0) -->
+    {% if cleaning_count > 0 %}
+    <div class="mb-6 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border-l-4 border-amber-500 p-4 rounded-xl flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-[26px]">sanitizer</span>
+        <div>
+          <h2 class="text-sm font-bold text-amber-950 dark:text-amber-200 font-['Plus_Jakarta_Sans']">
+            {{ cleaning_count }} Room{{ cleaning_count|pluralize }} Awaiting Turnover / Sanitization
+          </h2>
+          <p class="text-xs text-amber-800 dark:text-amber-400 mt-0.5">
+            Patients have been discharged or transferred. Cashier desk cannot admit new patients until marked clean.
+          </p>
+        </div>
+      </div>
+      <button type="button" onclick="setHousekeepingFilter('cleaning')" class="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition">
+        View Cleaning Queue &darr;
+      </button>
+    </div>
+    {% endif %}
+
+    <!-- Rooms Cards Grid Layout -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="roomCardsContainer">
+      {% for room in all_rooms %}
+      <div class="room-card bg-white dark:bg-slate-900 border rounded-2xl p-4 sm:p-5 shadow-2xs transition-all hover:shadow-md flex flex-col justify-between
+        {% if room.status == 'cleaning' %}
+          border-amber-300 dark:border-amber-800/80 ring-1 ring-amber-400/30
+        {% elif room.status == 'occupied' %}
+          border-blue-200 dark:border-blue-900/60
+        {% else %}
+          border-slate-200 dark:border-slate-800
+        {% endif %}"
+        data-status="{{ room.status }}"
+        data-room="{{ room.room_number|lower }}"
+        data-cadre="{{ room.cadre_name|lower }}"
+        id="roomCard-{{ room.room_number|slugify }}">
+
+        <!-- Top details -->
+        <div>
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div>
+              <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block leading-tight">{{ room.cadre_name }}</span>
+              <h3 class="text-lg font-bold text-slate-900 dark:text-white font-mono leading-tight mt-0.5">{{ room.room_number }}</h3>
+            </div>
+            <!-- Status Badge -->
+            <div id="badge-{{ room.room_number|slugify }}">
+              {% if room.status == 'cleaning' %}
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 animate-pulse">
+                <span class="material-symbols-outlined text-[12px]">sanitizer</span>
+                Needs Cleaning
+              </span>
+              {% elif room.status == 'occupied' %}
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
+                <span class="material-symbols-outlined text-[12px]">hotel</span>
+                Occupied
+              </span>
+              {% else %}
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                <span class="material-symbols-outlined text-[12px]">check_circle</span>
+                Ready
+              </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Context Information -->
+          <div class="py-2 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 space-y-1">
+            {% if room.status == 'occupied' %}
+            <div class="flex items-center gap-1.5 text-blue-700 dark:text-blue-400 font-medium">
+              <span class="material-symbols-outlined text-[15px]">person</span>
+              <span>Patient: <strong>{{ room.patient.name }}</strong> ({{ room.patient.patient_id }})</span>
+            </div>
+            <div class="text-[11px] text-slate-400">
+              Admitted: {{ room.patient.inpatient_admitted_at|date:"d M Y, h:i A"|default:"Recently" }}
+            </div>
+            {% elif room.status == 'cleaning' %}
+            <div class="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-semibold">
+              <span class="material-symbols-outlined text-[15px]">priority_high</span>
+              <span>Awaiting room turnover & sanitation</span>
+            </div>
+            <div class="text-[11px] text-slate-400">
+              Marked dirty upon patient discharge/transfer
+            </div>
+            {% else %}
+            <div class="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-medium">
+              <span class="material-symbols-outlined text-[15px]">verified</span>
+              <span>Available for new admission</span>
+            </div>
+            {% if room.last_cleaned_at %}
+            <div class="text-[11px] text-slate-400" id="lastCleaned-{{ room.room_number|slugify }}">
+              Cleaned: {{ room.last_cleaned_at|date:"d M, h:i A" }} {% if room.last_cleaned_by %}by {{ room.last_cleaned_by.first_name|default:room.last_cleaned_by.username }}{% endif %}
+            </div>
+            {% endif %}
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Action Area -->
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-800 mt-2">
+          {% if room.status == 'cleaning' %}
+          <button type="button"
+            onclick="markRoomCleaned('{{ hospital.slug }}', '{{ room.room_number|escapejs }}')"
+            id="btnClean-{{ room.room_number|slugify }}"
+            class="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition active:scale-95">
+            <span class="material-symbols-outlined text-[16px]">check_circle</span>
+            <span>Mark Clean & Ready</span>
+          </button>
+          {% elif room.status == 'available' %}
+          <div class="flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold py-1">
+            <span class="flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">done_all</span>
+              Ready for Billing Desk
+            </span>
+            <button type="button"
+              onclick="markRoomCleaned('{{ hospital.slug }}', '{{ room.room_number|escapejs }}')"
+              class="text-slate-400 hover:text-emerald-600 text-[10px] underline" title="Re-sanitize room">
+              Re-sanitize
+            </button>
+          </div>
+          {% else %}
+          <div class="text-center text-[11px] text-slate-400 py-1 font-medium">
+            Currently In Use
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Empty State -->
+    <div id="noRoomsMatch" class="hidden text-center py-12 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl mt-4">
+      <span class="material-symbols-outlined text-slate-400 text-5xl mb-2">meeting_room</span>
+      <h3 class="text-sm font-bold text-slate-700 dark:text-slate-200">No rooms match your filter</h3>
+      <p class="text-xs text-slate-400 mt-1">Try clearing your search keyword or switching between tabs.</p>
+      <button type="button" onclick="document.getElementById('roomSearchInput').value=''; setHousekeepingFilter('all');" class="mt-4 px-4 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition">
+        Reset Filters
+      </button>
+    </div>
+  </main>
+
+  <footer class="border-t border-slate-200 dark:border-slate-800 py-4 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 mt-auto">
+    CliniqPay Housekeeping & Sanitization System &copy; {% now "Y" %} {{ hospital.name }}
+  </footer>
+
+  <!-- AJAX Script for Quick 1-Click Sanitization -->
+  <script>
+    let activeFilter = 'all';
+
+    function setHousekeepingFilter(filter) {
+      activeFilter = filter;
+      document.querySelectorAll('.hk-filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-filter') === filter) {
+          btn.className = 'hk-filter-btn px-3 py-1.5 rounded-lg font-semibold transition shrink-0 bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs';
+        } else {
+          btn.className = 'hk-filter-btn px-3 py-1.5 rounded-lg font-semibold transition shrink-0 text-slate-500 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-700/60';
+        }
+      });
+      filterRoomsList();
+    }
+
+    function filterRoomsList() {
+      const query = (document.getElementById('roomSearchInput')?.value || '').trim().toLowerCase();
+      const cards = document.querySelectorAll('.room-card');
+      let visible = 0;
+
+      cards.forEach(card => {
+        const status = card.getAttribute('data-status');
+        const room = card.getAttribute('data-room') || '';
+        const cadre = card.getAttribute('data-cadre') || '';
+
+        const matchesFilter = (activeFilter === 'all') || (status === activeFilter);
+        const matchesQuery = !query || room.includes(query) || cadre.includes(query);
+
+        if (matchesFilter && matchesQuery) {
+          card.classList.remove('hidden');
+          visible++;
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+
+      const emptyEl = document.getElementById('noRoomsMatch');
+      if (emptyEl) {
+        if (visible === 0 && cards.length > 0) {
+          emptyEl.classList.remove('hidden');
+        } else {
+          emptyEl.classList.add('hidden');
+        }
+      }
+    }
+
+    // CSRF Helper
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    function markRoomCleaned(hospitalSlug, roomNumber) {
+      const slugId = roomNumber.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const btn = document.getElementById('btnClean-' + slugId);
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">refresh</span> Marking Clean...`;
+      }
+
+      const formData = new FormData();
+      formData.append('room_number', roomNumber);
+
+      fetch(`/hospital/${hospitalSlug}/housekeeping/mark-ready/`, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          // Update card in-place without page reload
+          const card = document.getElementById('roomCard-' + slugId);
+          if (card) {
+            card.setAttribute('data-status', 'available');
+            card.classList.remove('border-amber-300', 'dark:border-amber-800/80', 'ring-1', 'ring-amber-400/30');
+            card.classList.add('border-slate-200', 'dark:border-slate-800');
+
+            // Update badge
+            const badge = document.getElementById('badge-' + slugId);
+            if (badge) {
+              badge.innerHTML = `
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                  <span class="material-symbols-outlined text-[12px]">check_circle</span>
+                  Ready
+                </span>
+              `;
+            }
+
+            // Update button area
+            const actionArea = card.querySelector('.pt-3.border-t');
+            if (actionArea) {
+              actionArea.innerHTML = `
+                <div class="flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold py-1">
+                  <span class="flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">done_all</span>
+                    Ready for Billing Desk
+                  </span>
+                  <button type="button"
+                    onclick="markRoomCleaned('${hospitalSlug}', '${roomNumber}')"
+                    class="text-slate-400 hover:text-emerald-600 text-[10px] underline" title="Re-sanitize room">
+                    Re-sanitize
+                  </button>
+                </div>
+              `;
+            }
+
+            // Update KPI count numbers
+            const kpiClean = document.getElementById('kpiCleaningCount');
+            if (kpiClean) {
+              const currentClean = parseInt(kpiClean.innerText, 10) || 0;
+              kpiClean.innerText = Math.max(0, currentClean - 1);
+            }
+            const kpiAvail = document.getElementById('kpiAvailableCount');
+            if (kpiAvail) {
+              const currentAvail = parseInt(kpiAvail.innerText, 10) || 0;
+              kpiAvail.innerText = currentAvail + 1;
+            }
+
+            // Re-apply filter if in 'cleaning' tab
+            if (activeFilter === 'cleaning') {
+              filterRoomsList();
+            }
+          }
+        } else {
+          alert(data.message || 'Error marking room ready.');
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<span class="material-symbols-outlined text-[16px]">check_circle</span> Mark Clean & Ready`;
+          }
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Network error while marking room clean. Reloading page...');
+        window.location.reload();
+      });
+    }
+  </script>
+</body>
+</html>

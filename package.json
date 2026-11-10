@@ -1,0 +1,14 @@
+{
+  "name": "cliniqpay",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "atlas": "node docs/app-map/build-atlas.mjs",
+    "atlas:status": "node docs/app-map/atlas-status.mjs",
+    "atlas:next": "node docs/app-map/atlas-status.mjs --next",
+    "atlas:verify": "node docs/app-map/verify-atlas.mjs",
+    "atlas:check": "node --test docs/app-map/atlas-contract.test.mjs",
+    "test": "node --test"
+  }
+}

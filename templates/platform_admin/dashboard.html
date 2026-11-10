@@ -1,0 +1,513 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Master Administration — CliniqPay</title>
+  <link rel="icon" type="image/png" href="{% static 'images/original-icon-mark.png' %}"/>
+  <script src="{% static 'vendor/tailwind.min.js' %}"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  {% include 'includes/theme_head.html' %}
+</head>
+<body class="bg-slate-900 text-slate-100 font-['Inter'] min-h-screen">
+  <!-- Top Navigation (Dark Clinical Fintech) -->
+  <header class="bg-slate-800/90 border-b border-slate-700/80 sticky top-0 z-30 backdrop-blur-xl">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 sm:py-0 sm:h-16 flex flex-wrap items-center justify-between gap-y-2">
+      <div class="flex items-center gap-3 sm:gap-4">
+        <a href="/platform/">
+          <!-- Mobile: Mark icon only -->
+          <img src="{% static 'images/original-icon-mark.png' %}" alt="Cliniqpay Logo" class="h-8 w-auto object-contain sm:hidden"/>
+          <!-- Tablet & Desktop: Full stacked logo -->
+          <img src="{% static 'images/original-staked.png' %}" alt="Cliniqpay Logo" class="hidden sm:inline-block h-10 w-auto object-contain"/>
+        </a>
+        <span class="px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-400 text-xs font-semibold uppercase tracking-wider">
+          Master Console
+        </span>
+      </div>
+      <div class="flex items-center gap-2 sm:gap-4 flex-wrap">
+        {% include 'includes/theme_toggle_btn.html' %}
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <div class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></div>
+          <span class="text-xs text-slate-300">Admin: <strong class="text-white">{{ request.user.username }}</strong></span>
+        </div>
+        <a href="{% url 'platform_admin:logout' %}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 border border-rose-500/20 transition">
+          Sign Out
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+      <div>
+        <h1 class="text-2xl font-bold font-['Plus_Jakarta_Sans'] text-white">Hospital Accounts & Enrollment</h1>
+        <p class="text-sm text-slate-400 mt-1">Review applicant clinics, authorize 7-day trials, and manage operational tenant status.</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="{% url 'platform_admin:support_dashboard' %}" class="px-3.5 py-2 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 text-xs font-semibold text-teal-300 flex items-center gap-1.5 transition">
+          <span class="material-symbols-outlined text-[16px]">support_agent</span>
+          <span>Support Tickets</span>
+        </a>
+        <a href="/" target="_blank" class="px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition">
+          <span class="material-symbols-outlined text-[16px]">open_in_new</span>
+          <span>View Public Site</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+      <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-700/80 shadow-lg">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Total Enrolled</span>
+          <span class="material-symbols-outlined text-slate-500 text-[20px]">domain</span>
+        </div>
+        <div class="text-3xl font-bold text-white mt-3">{{ enrollments.count }}</div>
+        <div class="text-xs text-slate-400 mt-1">Total healthcare providers</div>
+      </div>
+      <div class="bg-slate-800/80 p-6 rounded-2xl border border-amber-500/30 shadow-lg bg-gradient-to-br from-amber-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase text-amber-400 tracking-wider">Pending Review</span>
+          <span class="material-symbols-outlined text-amber-400 text-[20px]">pending_actions</span>
+        </div>
+        <div class="text-3xl font-bold text-amber-300 mt-3">{{ pending_count }}</div>
+        <div class="text-xs text-amber-400/80 mt-1">Requires admin approval</div>
+      </div>
+      <div class="bg-slate-800/80 p-6 rounded-2xl border border-teal-500/30 shadow-lg bg-gradient-to-br from-teal-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase text-teal-400 tracking-wider">Active Clinics</span>
+          <span class="material-symbols-outlined text-teal-400 text-[20px]">check_circle</span>
+        </div>
+        <div class="text-3xl font-bold text-teal-300 mt-3">{{ activated_count }}</div>
+        <div class="text-xs text-teal-400/80 mt-1">Live billing workspaces</div>
+      </div>
+    </div>
+
+    <!-- Requests Section -->
+    <div class="bg-slate-800/80 rounded-2xl border border-slate-700/80 shadow-xl overflow-hidden">
+      <div class="p-4 sm:px-6 sm:py-5 border-b border-slate-700/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-bold text-white font-['Plus_Jakarta_Sans']">Hospital Onboarding & Workspaces</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Isolated Tenant Registry & Clinic Workspaces</p>
+        </div>
+        
+        <!-- Live Search and Filter Controls -->
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+          <!-- Search Input -->
+          <div class="relative flex-1 sm:w-64">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+            <input type="text" id="enrollmentSearchInput" placeholder="Search clinic, admin, phone, plan..." class="w-full pl-9 pr-3 py-1.5 bg-slate-900/90 border border-slate-700 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-teal-500 transition">
+          </div>
+          
+          <!-- Plan Tier Filter Tabs -->
+          <div class="flex items-center gap-1 bg-slate-900/90 p-1 border border-slate-700/80 rounded-xl text-xs overflow-x-auto">
+            <button type="button" onclick="filterPlanTier('all')" class="plan-filter-btn px-2.5 py-1 rounded-lg font-semibold transition bg-teal-500 text-slate-900" data-plan="all">All Plans</button>
+            <button type="button" onclick="filterPlanTier('starter')" class="plan-filter-btn px-2.5 py-1 rounded-lg font-medium text-slate-300 hover:text-white transition" data-plan="starter">Starter</button>
+            <button type="button" onclick="filterPlanTier('standard')" class="plan-filter-btn px-2.5 py-1 rounded-lg font-medium text-slate-300 hover:text-white transition" data-plan="standard">Standard</button>
+            <button type="button" onclick="filterPlanTier('enterprise')" class="plan-filter-btn px-2.5 py-1 rounded-lg font-medium text-slate-300 hover:text-white transition" data-plan="enterprise">Enterprise</button>
+          </div>
+
+          <!-- Status Filter Tabs / Pills -->
+          <div class="flex items-center gap-1 bg-slate-900/90 p-1 border border-slate-700/80 rounded-xl text-xs overflow-x-auto">
+            <button type="button" onclick="filterEnrollments('all')" class="status-filter-btn px-2.5 py-1 rounded-lg font-semibold transition bg-teal-500 text-slate-900" data-filter="all">All Status</button>
+            <button type="button" onclick="filterEnrollments('pending_review')" class="status-filter-btn px-2.5 py-1 rounded-lg font-medium text-slate-300 hover:text-white transition" data-filter="pending_review">Pending</button>
+            <button type="button" onclick="filterEnrollments('activated')" class="status-filter-btn px-2.5 py-1 rounded-lg font-medium text-slate-300 hover:text-white transition" data-filter="activated">Active</button>
+            <button type="button" onclick="filterEnrollments('rejected')" class="status-filter-btn px-2.5 py-1 rounded-lg font-medium text-slate-300 hover:text-white transition" data-filter="rejected">Rejected</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Responsive Flex-Based Cards Container -->
+      <div id="enrollmentsList" class="p-4 sm:p-6 space-y-3.5">
+        {% for item in enrollments %}
+        <div class="enrollment-card bg-slate-900/70 hover:bg-slate-900/90 border border-slate-700/70 hover:border-slate-600 rounded-xl p-4 sm:p-5 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
+             data-status="{{ item.status }}"
+             data-plan="{{ item.plan_tier|default:'standard' }}"
+             data-search="{{ item.hospital_name|lower }} {{ item.city|lower }} {{ item.state|lower }} {{ item.admin_full_name|lower }} {{ item.contact_phone }} {{ item.contact_email|lower }} {{ item.get_plan_tier_display|lower }} {{ item.reference_token|stringformat:'s'|lower }}">
+          
+          <!-- Clinic Info & Primary Details -->
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2 mb-1.5">
+              <h3 class="text-sm sm:text-base font-bold text-white font-['Plus_Jakarta_Sans'] truncate">{{ item.hospital_name }}</h3>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-slate-800 text-teal-400 border border-teal-500/30">
+                #{{ item.reference_token|stringformat:"s"|slice:":8" }}
+              </span>
+              <!-- Plan Tier Badge -->
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider
+                {% if item.plan_tier == 'enterprise' %}bg-purple-500/20 text-purple-300 border border-purple-500/30
+                {% elif item.plan_tier == 'starter' %}bg-sky-500/20 text-sky-300 border border-sky-500/30
+                {% else %}bg-teal-500/20 text-teal-300 border border-teal-500/30{% endif %}">
+                <span class="material-symbols-outlined text-[13px]">
+                  {% if item.plan_tier == 'enterprise' %}domain{% elif item.plan_tier == 'starter' %}local_hospital{% else %}medical_services{% endif %}
+                </span>
+                {{ item.get_plan_tier_display }}
+              </span>
+              <!-- Status Badge -->
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold
+                {% if item.status == 'activated' %}bg-teal-500/20 text-teal-300 border border-teal-500/30
+                {% elif item.status == 'rejected' %}bg-rose-500/20 text-rose-300 border border-rose-500/30
+                {% else %}bg-amber-500/20 text-amber-300 border border-amber-500/30{% endif %}">
+                {{ item.get_status_display }}
+              </span>
+            </div>
+
+            <!-- Meta details row -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 text-xs text-slate-300 mt-2">
+              <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-slate-400 text-[16px]">location_on</span>
+                <span class="truncate">{{ item.city }}, {{ item.state }}</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-slate-400 text-[16px]">bed</span>
+                <span class="truncate">{{ item.bed_count|default:"20" }} Beds Declared</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-slate-400 text-[16px]">person</span>
+                <span class="font-medium text-slate-200 truncate">{{ item.admin_full_name }}</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-slate-400 text-[16px]">call</span>
+                <span class="text-white font-medium">+91 {{ item.contact_phone }}</span>
+                <span class="text-slate-500 mx-1">•</span>
+                <span class="text-slate-400 truncate">{{ item.contact_email }}</span>
+              </div>
+            </div>
+
+            {% if item.reviewed_by %}
+            <div class="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[13px] text-slate-500">verified</span>
+              Reviewed by <span class="text-slate-300 font-medium">{{ item.reviewed_by }}</span>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Actions Column / Buttons -->
+          <div class="flex items-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-slate-800 flex-shrink-0">
+            <!-- Edit Enrollment Button -->
+            <button type="button" onclick="openEditEnrollmentModal('{{ item.pk }}', '{{ item.hospital_name|escapejs }}', '{{ item.plan_tier|default:'standard' }}', '{{ item.bed_count|default:20 }}', '{{ item.city|escapejs }}', '{{ item.state|escapejs }}', '{{ item.admin_full_name|escapejs }}', '{{ item.contact_phone|escapejs }}', '{{ item.contact_email|escapejs }}')" class="p-1.5 rounded-lg text-slate-400 hover:text-teal-300 hover:bg-slate-800 transition" title="Edit Hospital Request Details">
+              <span class="material-symbols-outlined text-[18px]">edit</span>
+            </button>
+
+            {% if item.status == 'pending_review' %}
+            <form action="{% url 'platform_admin:approve' item.pk %}" method="POST" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="w-full sm:w-auto px-3.5 py-1.5 bg-teal-500 hover:bg-teal-600 text-slate-900 font-semibold rounded-lg text-xs shadow-md transition flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">check</span>
+                Approve & Activate
+              </button>
+            </form>
+            <form action="{% url 'platform_admin:reject' item.pk %}" method="POST" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="w-full sm:w-auto px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">close</span>
+                Reject
+              </button>
+            </form>
+            {% elif item.hospital %}
+            <!-- Welcome Credentials Button -->
+            <button type="button" onclick="showCredentialsModal('{{ item.pk }}', '{{ item.hospital_name|escapejs }}', '{{ item.hospital.slug }}', '{{ item.contact_email|escapejs }}', '{{ item.temp_password|default:'BnvAdmin@2026'|escapejs }}')" class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-semibold transition" title="View Welcome Credentials">
+              <span class="material-symbols-outlined text-[15px]">key</span>
+              Welcome Credentials
+            </button>
+            {% else %}
+            <span class="text-xs text-slate-500 font-medium px-2 py-1">Activated</span>
+            {% endif %}
+          </div>
+        </div>
+        {% empty %}
+        <div class="p-8 text-center text-slate-400 bg-slate-900/40 rounded-xl border border-slate-800">
+          <span class="material-symbols-outlined text-3xl text-slate-500 mb-2">inbox</span>
+          <p class="text-sm">No hospital enrollment requests found.</p>
+        </div>
+        {% endfor %}
+
+        <!-- Empty search/filter state (hidden by default) -->
+        <div id="noResultsState" class="hidden p-8 text-center text-slate-400 bg-slate-900/40 rounded-xl border border-slate-800">
+          <span class="material-symbols-outlined text-3xl text-slate-500 mb-2">search_off</span>
+          <p class="text-sm">No hospital requests match your filter criteria.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Welcome Credentials Modal with Reset Password capability -->
+  <div id="credentialsModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-700">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-amber-400 text-[22px]">badge</span>
+          <h3 class="text-base font-bold text-white font-['Plus_Jakarta_Sans']">Welcome Credentials</h3>
+        </div>
+        <button onclick="closeCredentialsModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-300 mb-4">
+        Share these credentials with <strong id="credHospitalName" class="text-white"></strong> to access their activated clinic workspace.
+      </p>
+
+      <div class="space-y-3 bg-slate-900/80 p-4 rounded-xl border border-slate-700 text-xs font-mono">
+        <div>
+          <span class="text-slate-500 block text-[11px] uppercase tracking-wider mb-0.5">Workspace URL</span>
+          <a id="credWorkspaceUrl" href="#" target="_blank" class="text-teal-400 underline break-all select-all font-sans text-xs"></a>
+        </div>
+        <div>
+          <span class="text-slate-500 block text-[11px] uppercase tracking-wider mb-0.5">Admin Username / Email</span>
+          <span id="credUsername" class="text-white select-all"></span>
+        </div>
+        <div>
+          <span class="text-slate-500 block text-[11px] uppercase tracking-wider mb-0.5">Current Password</span>
+          <span id="credPassword" class="text-amber-300 font-bold select-all"></span>
+        </div>
+      </div>
+
+      <!-- Password Reset Form inside Modal -->
+      <form id="resetPasswordForm" method="POST" action="" class="mt-4 pt-4 border-t border-slate-700">
+        {% csrf_token %}
+        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Reset Password</label>
+        <div class="flex gap-2">
+          <input type="text" name="new_password" placeholder="Enter new password (or leave blank to auto-generate)" class="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs focus:outline-none focus:border-teal-500">
+          <button type="submit" class="px-3.5 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-semibold transition">
+            Reset
+          </button>
+        </div>
+      </form>
+
+      <div class="mt-6 flex gap-3">
+        <button type="button" onclick="copyCredentials()" class="flex-1 py-2.5 bg-teal-500 hover:bg-teal-600 text-slate-900 font-semibold rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-md">
+          <span class="material-symbols-outlined text-[16px]">content_copy</span>
+          <span id="copyBtnText">Copy Credentials</span>
+        </button>
+        <button type="button" onclick="closeCredentialsModal()" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium rounded-lg text-xs transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Enrollment Request Modal -->
+  <div id="editEnrollmentModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 overflow-y-auto">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative my-8">
+      <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-700">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-teal-400 text-[22px]">domain_edit</span>
+          <h3 class="text-base font-bold text-white font-['Plus_Jakarta_Sans']">Edit Hospital Onboarding Details</h3>
+        </div>
+        <button onclick="closeEditEnrollmentModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <form id="editEnrollmentForm" method="POST" action="" class="space-y-3.5 text-xs">
+        {% csrf_token %}
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Hospital / Clinic Name *</label>
+          <input type="text" id="edit_hospital_name" name="hospital_name" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-teal-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Subscription Plan</label>
+            <div class="relative">
+              <select id="edit_plan_tier" name="plan_tier" onchange="syncBedsFromPlan(this.value)" class="w-full appearance-none px-3 py-2 pr-8 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-teal-500 text-xs">
+                <option value="starter">Starter (Solo & Daycare, &le;5 Beds)</option>
+                <option value="standard">Standard Hospital (6–30 Beds)</option>
+                <option value="enterprise">Enterprise Chain (30+ Beds)</option>
+              </select>
+              <span class="material-symbols-outlined absolute right-2 top-2.5 text-[16px] text-slate-400 pointer-events-none">expand_more</span>
+            </div>
+            <span class="text-[10px] text-slate-400 mt-0.5 block" id="planTierHelp">Auto-updates recommended bed capacity</span>
+          </div>
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Declared Bed Capacity</label>
+            <input type="number" id="edit_bed_count" name="bed_count" min="1" max="1000" oninput="syncPlanFromBeds(this.value)" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-teal-500">
+            <span class="text-[10px] text-slate-400 mt-0.5 block" id="bedCountHelp">&le;5: Starter · 6–30: Standard · 30+: Enterprise</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">City</label>
+            <input type="text" id="edit_city" name="city" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-teal-500">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">State</label>
+            <input type="text" id="edit_state" name="state" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-teal-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Administrator Full Name *</label>
+          <input type="text" id="edit_admin_full_name" name="admin_full_name" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-teal-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Contact Phone</label>
+            <input type="tel" id="edit_contact_phone" name="contact_phone" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-teal-500">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Official Email</label>
+            <input type="email" id="edit_contact_email" name="contact_email" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-teal-500">
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-700 flex justify-end gap-2.5">
+          <button type="button" onclick="closeEditEnrollmentModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg font-medium text-xs transition">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-slate-900 font-bold rounded-lg text-xs shadow-md transition">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Two-way reactive sync between Subscription Plan and Declared Bed Capacity
+    function syncPlanFromBeds(bedsVal) {
+      const beds = parseInt(bedsVal, 10);
+      const planSelect = document.getElementById('edit_plan_tier');
+      if (!planSelect || isNaN(beds)) return;
+
+      if (beds <= 5) {
+        planSelect.value = 'starter';
+      } else if (beds <= 30) {
+        planSelect.value = 'standard';
+      } else {
+        planSelect.value = 'enterprise';
+      }
+    }
+
+    function syncBedsFromPlan(planVal) {
+      const bedInput = document.getElementById('edit_bed_count');
+      if (!bedInput) return;
+
+      // When the user selects a Subscription Plan, set Declared Bed Capacity to the plan's max limit
+      if (planVal === 'starter') {
+        bedInput.value = 5;
+      } else if (planVal === 'standard') {
+        bedInput.value = 30;
+      } else if (planVal === 'enterprise') {
+        bedInput.value = 100;
+      }
+    }
+
+    function openEditEnrollmentModal(pk, hospitalName, planTier, bedCount, city, state, adminName, phone, email) {
+      document.getElementById('editEnrollmentForm').action = '/platform/edit-enrollment/' + pk + '/';
+      document.getElementById('edit_hospital_name').value = hospitalName;
+      document.getElementById('edit_plan_tier').value = planTier;
+      document.getElementById('edit_bed_count').value = bedCount;
+      document.getElementById('edit_city').value = city;
+      document.getElementById('edit_state').value = state;
+      document.getElementById('edit_admin_full_name').value = adminName;
+      document.getElementById('edit_contact_phone').value = phone;
+      document.getElementById('edit_contact_email').value = email;
+      document.getElementById('editEnrollmentModal').classList.remove('hidden');
+      document.getElementById('editEnrollmentModal').classList.add('flex');
+    }
+
+    function closeEditEnrollmentModal() {
+      document.getElementById('editEnrollmentModal').classList.add('hidden');
+      document.getElementById('editEnrollmentModal').classList.remove('flex');
+    }
+    function showCredentialsModal(pk, hospitalName, slug, username, password) {
+      const url = window.location.origin + '/hospital/' + slug + '/';
+      document.getElementById('resetPasswordForm').action = '/platform/reset-password/' + pk + '/';
+      document.getElementById('credHospitalName').innerText = hospitalName;
+      document.getElementById('credWorkspaceUrl').innerText = url;
+      document.getElementById('credWorkspaceUrl').href = url;
+      document.getElementById('credUsername').innerText = username;
+      document.getElementById('credPassword').innerText = password;
+      document.getElementById('credentialsModal').classList.remove('hidden');
+      document.getElementById('credentialsModal').classList.add('flex');
+      document.getElementById('copyBtnText').innerText = 'Copy Credentials';
+    }
+
+    function closeCredentialsModal() {
+      document.getElementById('credentialsModal').classList.add('hidden');
+      document.getElementById('credentialsModal').classList.remove('flex');
+    }
+
+    function copyCredentials() {
+      const hospital = document.getElementById('credHospitalName').innerText;
+      const url = document.getElementById('credWorkspaceUrl').innerText;
+      const username = document.getElementById('credUsername').innerText;
+      const pass = document.getElementById('credPassword').innerText;
+      const text = `CliniqPay Workspace Credentials for ${hospital}:\nURL: ${url}\nUsername: ${username}\nPassword: ${pass}`;
+      navigator.clipboard.writeText(text).then(() => {
+        document.getElementById('copyBtnText').innerText = 'Copied!';
+      });
+    }
+
+    // Live search, status & plan filter logic
+    let currentStatusFilter = 'all';
+    let currentPlanFilter = 'all';
+
+    function filterPlanTier(plan) {
+      currentPlanFilter = plan;
+
+      // Update button styling
+      document.querySelectorAll('.plan-filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-plan') === plan) {
+          btn.className = 'plan-filter-btn px-2.5 py-1 rounded-lg font-semibold transition bg-teal-500 text-slate-900';
+        } else {
+          btn.className = 'plan-filter-btn px-2.5 py-1 rounded-lg font-medium text-slate-300 hover:text-white transition';
+        }
+      });
+
+      applyFilters();
+    }
+
+    function filterEnrollments(status) {
+      currentStatusFilter = status;
+
+      // Update button styling
+      document.querySelectorAll('.status-filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-filter') === status) {
+          btn.className = 'status-filter-btn px-2.5 py-1 rounded-lg font-semibold transition bg-teal-500 text-slate-900';
+        } else {
+          btn.className = 'status-filter-btn px-2.5 py-1 rounded-lg font-medium text-slate-300 hover:text-white transition';
+        }
+      });
+
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const query = (document.getElementById('enrollmentSearchInput').value || '').trim().toLowerCase();
+      const cards = document.querySelectorAll('.enrollment-card');
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const cardStatus = card.getAttribute('data-status');
+        const cardPlan = card.getAttribute('data-plan') || '';
+        const cardSearchText = card.getAttribute('data-search') || '';
+
+        const matchesStatus = (currentStatusFilter === 'all') || (cardStatus === currentStatusFilter);
+        const matchesPlan = (currentPlanFilter === 'all') || (cardPlan === currentPlanFilter);
+        const matchesQuery = !query || cardSearchText.includes(query);
+
+        if (matchesStatus && matchesPlan && matchesQuery) {
+          card.classList.remove('hidden');
+          visibleCount++;
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+
+      const noResults = document.getElementById('noResultsState');
+      if (noResults) {
+        if (visibleCount === 0 && cards.length > 0) {
+          noResults.classList.remove('hidden');
+        } else {
+          noResults.classList.add('hidden');
+        }
+      }
+    }
+
+    document.getElementById('enrollmentSearchInput')?.addEventListener('input', applyFilters);
+  </script>
+</body>
+</html>

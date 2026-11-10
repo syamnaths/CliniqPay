@@ -1,0 +1,1501 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ doctor.full_name|default:"Consulting Doctor" }} — Clinical Consultation Workspace | {{ hospital.name }}</title>
+  <link rel="icon" type="image/png" href="{% static 'images/original-icon-mark.png' %}"/>
+  <script src="{% static 'vendor/tailwind.min.js' %}"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;600&family=Caveat:wght@600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  {% include 'includes/theme_head.html' %}
+  <style>
+    .write-pad-canvas {
+      touch-action: none;
+      cursor: crosshair;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-['Inter'] min-h-screen transition-colors">
+
+  <!-- Top Clinical Header -->
+  <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-xs transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 lg:py-0 lg:h-16 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 lg:gap-4">
+      
+      <!-- Left: Clinic Logo & Physician Identity -->
+      <div class="flex items-center justify-between lg:justify-start gap-3 w-full lg:w-auto min-w-0">
+        <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <a href="{% url 'setup_hospital:doctor_portal' hospital.slug %}" class="flex items-center gap-2.5 shrink-0">
+            {% if hospital.logo %}
+            <div class="w-9 h-9 sm:w-10 sm:h-10 p-1 bg-white dark:bg-white/10 rounded-xl border border-slate-200 dark:border-slate-700/80 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+              <img src="{{ hospital.logo.url }}" alt="{{ hospital.name }} Logo" class="w-full h-full rounded-lg object-contain">
+            </div>
+            {% else %}
+            <img src="{% static 'images/original-icon-mark.png' %}" alt="Cliniqpay Logo" class="h-8 w-auto object-contain sm:hidden"/>
+            <img src="{% static 'images/original-staked.png' %}" alt="Cliniqpay Logo" class="hidden sm:inline-block h-9 w-auto object-contain"/>
+            {% endif %}
+          </a>
+          <div class="h-6 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block shrink-0"></div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 sm:gap-2">
+              <span class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white font-['Plus_Jakarta_Sans'] leading-tight truncate">{{ hospital.name }}</span>
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-200 dark:border-sky-800 shrink-0">
+                <span class="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
+                Doctor Desk
+              </span>
+            </div>
+            <div class="flex items-center gap-1.5 sm:gap-2 text-[11px] text-slate-500 dark:text-slate-400 leading-tight truncate mt-0.5">
+              <span>Physician: <strong class="text-sky-700 dark:text-sky-300 font-semibold">{{ doctor.full_name|default:request.user.first_name|default:request.user.username }}</strong>
+                <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                  doctor
+                </span>
+              </span>
+              {% if all_doctors %}
+              <!-- Admin Switch Doctor Dropdown -->
+              <span class="inline-flex items-center gap-1 ml-1">
+                <span class="text-slate-400">Switch:</span>
+                <select onchange="window.location.href='?doctor_id=' + this.value" class="text-[11px] font-semibold py-0.5 px-1.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200">
+                  {% for doc in all_doctors %}
+                  <option value="{{ doc.id }}" {% if doc.id == doctor.id %}selected{% endif %}>Dr. {{ doc.name }} ({{ doc.specialization }})</option>
+                  {% endfor %}
+                </select>
+              </span>
+              {% else %}
+              <span>·</span>
+              <span class="truncate">{{ doctor.specialization|default:"General Medicine" }}</span>
+              {% endif %}
+              {% if doctor.registration_number %}
+              <span>·</span>
+              <span class="font-mono text-slate-400">Reg: {{ doctor.registration_number }}</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile & Tablet Quick Sign Out & Theme Toggle -->
+        <div class="flex items-center gap-1.5 lg:hidden shrink-0">
+          {% include 'includes/theme_toggle_btn.html' %}
+          <a href="{% url 'setup_hospital:logout' hospital.slug %}" class="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-rose-600" title="Sign Out">
+            <span class="material-symbols-outlined text-[18px]">logout</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Action Navigation CTAs (Smooth horizontal scroll on tablet) -->
+      <div class="flex items-center gap-1.5 sm:gap-2 w-full lg:w-auto overflow-x-auto no-scrollbar py-0.5 lg:py-0 shrink-0">
+        <div class="hidden lg:flex items-center">
+          {% include 'includes/theme_toggle_btn.html' %}
+        </div>
+
+        {% if staff_role == 'admin' %}
+        <a href="{% url 'setup_hospital:dashboard' hospital.slug %}" class="px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-1 transition shrink-0">
+          <span class="material-symbols-outlined text-[16px]">tune</span>
+          <span>Admin Setup</span>
+        </a>
+        <a href="{% url 'billing:counter' hospital.slug %}" class="px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-1 transition shrink-0">
+          <span class="material-symbols-outlined text-[16px]">point_of_sale</span>
+          <span>POS Cashier</span>
+        </a>
+        <a href="{% url 'billing:pharmacy_counter' hospital.slug %}" class="px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-1 transition shrink-0">
+          <span class="material-symbols-outlined text-[16px]">medication</span>
+          <span>Pharmacy</span>
+        </a>
+        {% endif %}
+
+        <a href="{% url 'setup_hospital:help_guide' hospital.slug %}" class="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium flex items-center gap-1 transition shrink-0">
+          <span class="material-symbols-outlined text-[16px] text-slate-500">help</span>
+          <span>Help</span>
+        </a>
+
+        <a href="{% url 'setup_hospital:support' hospital.slug %}" class="px-2.5 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 text-xs font-semibold flex items-center gap-1 transition shrink-0">
+          <span class="material-symbols-outlined text-[16px]">support_agent</span>
+          <span>Support</span>
+        </a>
+
+        <a href="{% url 'setup_hospital:logout' hospital.slug %}" class="hidden lg:inline-flex px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 text-xs font-medium text-slate-700 dark:text-slate-200 transition shrink-0">
+          Sign Out
+        </a>
+      </div>
+    </div>
+  </header>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- Flash Messages -->
+    {% if messages %}
+    <div class="space-y-2">
+      {% for message in messages %}
+      <div class="p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between gap-3 shadow-xs
+        {% if message.tags == 'error' %}bg-rose-50 border border-rose-200 text-rose-800 dark:bg-rose-950/60 dark:border-rose-900 dark:text-rose-200
+        {% elif message.tags == 'warning' %}bg-amber-50 border border-amber-200 text-amber-800 dark:bg-amber-950/60 dark:border-amber-900 dark:text-amber-200
+        {% else %}bg-emerald-50 border border-emerald-200 text-emerald-800 dark:bg-emerald-950/60 dark:border-emerald-900 dark:text-emerald-200{% endif %}">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">
+            {% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}check_circle{% endif %}
+          </span>
+          <span>{{ message }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Top Clinical Overview Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[24px]">groups</span>
+        </div>
+        <div>
+          <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Today's OPD Queue</span>
+          <div class="text-xl font-bold font-['Plus_Jakarta_Sans'] text-slate-900 dark:text-white" id="statOpdCount">{{ opd_queue|length }} Patient{{ opd_queue|length|pluralize }}</div>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[24px]">hotel</span>
+        </div>
+        <div>
+          <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Admitted Inpatients (IPD)</span>
+          <div class="text-xl font-bold font-['Plus_Jakarta_Sans'] text-slate-900 dark:text-white" id="statIpdCount">{{ ipd_inpatients|length }} Patient{{ ipd_inpatients|length|pluralize }}</div>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[24px]">prescriptions</span>
+        </div>
+        <div>
+          <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Active E-Prescriptions</span>
+          <div class="text-xl font-bold font-['Plus_Jakarta_Sans'] text-slate-900 dark:text-white">{{ recent_prescriptions|length }} Issued</div>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[24px]">history_edu</span>
+        </div>
+        <div>
+          <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Case History Records</span>
+          <div class="text-xl font-bold font-mono text-slate-900 dark:text-white">
+            {{ history_notes|length }} Record{{ history_notes|length|pluralize }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Workspace: Left 7 cols (Clinical Pad & Rx Writer) / Right 5 cols (OPD Tokens Queue & Case History) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- LEFT 7 COLS: Clinical Workspace with Freehand Pad & Rx Suite -->
+      <div class="lg:col-span-7 space-y-6">
+        
+        <!-- Active Patient Identity Header -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-sm" id="activePatientAvatar">
+              <span class="material-symbols-outlined text-[26px]">person</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h2 class="text-base font-bold text-slate-900 dark:text-white font-['Plus_Jakarta_Sans']" id="activePatientNameHeading">
+                  Select Patient from Queue
+                </h2>
+                <span id="activeTokenBadge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800">
+                  Token #--
+                </span>
+                <span id="patientTypeBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                  Awaiting Selection
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" id="activePatientMetaHeading">
+                Click "Call & Attend" from the queue on the right to start consultation.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 self-end sm:self-center flex-wrap">
+            <button type="button" onclick="openWritePadModal()" class="px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5 transition shadow-2xs">
+              <span class="material-symbols-outlined text-[18px]">gesture</span>
+              <span>Open Freehand Pad</span>
+            </button>
+            <button type="button" onclick="scrollSection('rxFormSection')" class="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs">
+              <span class="material-symbols-outlined text-[17px]">prescriptions</span>
+              <span>E-Prescription</span>
+            </button>
+            <button type="button" id="markConsultDoneBtn" onclick="markActiveConsultationCompleted()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs">
+              <span class="material-symbols-outlined text-[17px]">check_circle</span>
+              <span>Complete Consultation</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 1. TYPED CLINICAL OBSERVATIONS & CASE NOTES (Prominent, High-Priority Workspace) -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-indigo-200/90 dark:border-indigo-850 p-5 shadow-xs space-y-4" id="clinicalObservationsCard">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white font-['Plus_Jakarta_Sans'] flex items-center gap-2">
+                <span class="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-[22px]">clinical_notes</span>
+                Typed Clinical Observations & Case Notes
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Comprehensive examination findings, clinical progress, differential diagnosis, and longitudinal timeline entries.</p>
+            </div>
+            <button type="button" onclick="openWritePadModal()" class="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5 transition self-start sm:self-center shrink-0">
+              <span class="material-symbols-outlined text-[17px]">draw</span>
+              <span>Attach Freehand Drawing / Diagram</span>
+            </button>
+          </div>
+
+          <!-- Large Text Area for Clinical Notes -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                Detailed Examination & Case Notes *
+              </label>
+              <span id="attachedDrawingBadge" class="hidden text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">brush</span>
+                Freehand drawing attached
+              </span>
+            </div>
+            <textarea id="padTypedNotes" rows="6" placeholder="Document clinical examination observations, symptom progression, systemic findings, tenderness, palpations, lab reviews, or provisional differential diagnoses..." class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 dark:border-slate-750 bg-slate-50/50 dark:bg-slate-850 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition leading-relaxed"></textarea>
+          </div>
+
+          <!-- Bottom Action Row: Provisional Diagnosis & Save to Timeline -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+            <div class="flex-1">
+              <div class="text-[11px] text-slate-500 dark:text-slate-400">
+                Tip: Notes saved here immediately append to the patient's permanent <strong>Case History Timeline</strong> on the right.
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="openWritePadModal()" class="px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition">
+                <span class="material-symbols-outlined text-[17px]">palette</span>
+                <span>Sketch Diagram</span>
+              </button>
+              <button type="button" onclick="savePadToHistory()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-sm">
+                <span class="material-symbols-outlined text-[17px]">save</span>
+                <span>Save Note to History</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. DIGITAL E-PRESCRIPTION FORM -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-xs space-y-5" id="rxFormSection">
+          
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h2 class="text-base font-bold text-slate-900 dark:text-white font-['Plus_Jakarta_Sans'] flex items-center gap-2">
+                <span class="material-symbols-outlined text-sky-600 dark:text-sky-400 text-[22px]">draw</span>
+                Write Clinical Prescription
+              </h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Vitals, diagnosis, and medications forwarded directly to Pharmacy terminal</p>
+            </div>
+            <span class="text-xs font-mono font-bold text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-2.5 py-1 rounded-lg border border-sky-200 dark:border-sky-800">
+              E-Prescription
+            </span>
+          </div>
+
+          <form method="POST" action="{% url 'setup_hospital:create_prescription' hospital.slug %}" id="doctorRxForm" onsubmit="return handleDoctorRxSubmit(event)" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="doctor_id" value="{{ doctor.id }}">
+            <input type="hidden" name="patient_id" id="rx_patient_id" value="">
+            <input type="hidden" name="is_inpatient" id="rx_is_inpatient" value="0">
+
+            <!-- 1. Patient Selection / Auto-Lookup -->
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[15px]">person</span>
+                  Patient Demographics
+                </div>
+                <span id="patientFormTypeBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                  Outpatient (OPD)
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs">
+                <div class="sm:col-span-4">
+                  <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Mobile Phone *</label>
+                  <input type="tel" name="patient_phone" id="rx_phone" required placeholder="10-digit mobile" maxlength="10"
+                    class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                </div>
+                <div class="sm:col-span-5">
+                  <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Patient Name *</label>
+                  <input type="text" name="patient_name" id="rx_name" required placeholder="Full name"
+                    class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                </div>
+                <div class="sm:col-span-3">
+                  <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Age / Gender</label>
+                  <div class="flex gap-1.5">
+                    <input type="number" name="patient_age" id="rx_age" placeholder="Age" min="0" max="120"
+                      class="w-14 px-2 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:outline-none text-center">
+                    <select name="patient_gender" id="rx_gender" class="flex-1 px-2 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                      <option value="M">M</option>
+                      <option value="F">F</option>
+                      <option value="O">Other</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Clinical Vitals & Chief Complaints -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Blood Pressure</label>
+                <input type="text" name="vitals_bp" placeholder="e.g. 120/80" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono text-xs">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Pulse / Heart Rate</label>
+                <input type="text" name="vitals_pulse" placeholder="e.g. 78 bpm" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono text-xs">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Temperature</label>
+                <input type="text" name="vitals_temp" placeholder="e.g. 98.4 F" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono text-xs">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Body Weight</label>
+                <input type="text" name="vitals_weight" placeholder="e.g. 68 kg" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono text-xs">
+              </div>
+            </div>
+
+            <!-- 3. Diagnosis & Complaints -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Chief Complaints</label>
+                <input type="text" name="chief_complaints" placeholder="e.g. High fever x 3 days, dry cough" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Clinical Diagnosis *</label>
+                <input type="text" name="diagnosis" id="rx_diagnosis_input" required placeholder="e.g. Acute Viral Bronchitis" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold text-sky-800 dark:text-sky-300">
+              </div>
+            </div>
+
+            <!-- 4. Prescribed Medications (Rx Table) -->
+            <div class="space-y-3 pt-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px] text-emerald-600">medication</span>
+                  Prescribed Medications (Rx)
+                  <span class="text-[10px] font-normal text-slate-400 font-sans">(Optional — leave blank if dietary/clinical advice only)</span>
+                </span>
+                <span class="text-[11px] text-slate-400">Total Meds: <strong id="rxItemCount" class="text-sky-600">0</strong></span>
+              </div>
+
+              <div id="rxMedicinesContainer" class="space-y-2.5">
+                <!-- Default Med Row 1 -->
+                <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-850 space-y-2 rx-med-row">
+                  <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs">
+                    <div class="sm:col-span-6">
+                      <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-0.5">Medicine Name</label>
+                      <input type="text" name="med_name" list="pharmacyMedsList" placeholder="e.g. Augmentin 625 Duo (Optional)" oninput="updateRxItemCount()" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold">
+                    </div>
+                    <div class="sm:col-span-3">
+                      <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-0.5">Frequency</label>
+                      <select name="med_dosage" class="w-full px-2 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+                        <option value="1-0-1">1-0-1 (Morning & Night)</option>
+                        <option value="1-1-1">1-1-1 (Thrice Daily)</option>
+                        <option value="1-0-0">1-0-0 (Morning only)</option>
+                        <option value="0-0-1">0-0-1 (Night only)</option>
+                        <option value="SOS">SOS (When needed)</option>
+                      </select>
+                    </div>
+                    <div class="sm:col-span-3">
+                      <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-0.5">Duration</label>
+                      <input type="text" name="med_duration" value="5 Days" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs pt-1 border-t border-slate-200/60 dark:border-slate-750">
+                    <div class="sm:col-span-4">
+                      <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Timing</label>
+                      <select name="med_timing" class="w-full px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+                        <option value="After Food">After Food</option>
+                        <option value="Before Food">Before Food</option>
+                        <option value="With Food">With Food</option>
+                      </select>
+                    </div>
+                    <div class="sm:col-span-3">
+                      <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Dispense Qty</label>
+                      <input type="number" name="med_quantity" value="10" min="1" class="w-full px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs text-center font-bold">
+                    </div>
+                    <div class="sm:col-span-5">
+                      <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Special Instructions (Optional)</label>
+                      <input type="text" name="med_notes" placeholder="e.g. Avoid dairy products" class="w-full px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pharmacy Catalog Datalist -->
+              <datalist id="pharmacyMedsList">
+                {% for m in pharmacy_meds %}
+                <option value="{{ m.name }}">
+                {% endfor %}
+              </datalist>
+
+              <button type="button" onclick="addRxMedRow()" class="w-full py-2 border-2 border-dashed border-sky-300 dark:border-sky-800 hover:border-sky-500 rounded-xl text-xs font-semibold text-sky-700 dark:text-sky-300 hover:bg-sky-50/50 dark:hover:bg-sky-950/30 flex items-center justify-center gap-1.5 transition">
+                <span class="material-symbols-outlined text-[16px]">add_circle</span>
+                <span>Add Another Medicine to Prescription</span>
+              </button>
+            </div>
+
+            <!-- 5. Doctor Advice & Notes -->
+            <div class="text-xs">
+              <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Clinical Advice / Dietary Instructions</label>
+              <textarea name="clinical_notes" rows="2" placeholder="e.g. Adequate oral fluid intake, steam inhalation twice daily. Review after 5 days if fever persists." class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs"></textarea>
+            </div>
+
+            <button type="submit" class="w-full py-3 px-4 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-[18px]">verified</span>
+              <span>Issue E-Prescription & Forward to Pharmacy</span>
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- RIGHT 5 COLS: OPD Token Queue & Date-Ordered Case History Timeline -->
+      <div class="lg:col-span-5 space-y-5">
+        
+        <!-- OPD Consultation Live Queue (Tokens & Estimated Wait) -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs">
+          
+          <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="switchQueueTab('opd')" id="tabBtnOpd" class="px-3 py-1.5 rounded-xl font-bold text-xs bg-sky-600 text-white flex items-center gap-1.5 transition">
+                <span class="material-symbols-outlined text-[16px]">confirmation_number</span>
+                <span id="tabLabelOpd">OPD Tokens ({{ opd_queue|length }})</span>
+              </button>
+              <button type="button" onclick="switchQueueTab('ipd')" id="tabBtnIpd" class="px-3 py-1.5 rounded-xl font-medium text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1.5 transition">
+                <span class="material-symbols-outlined text-[16px]">hotel</span>
+                <span id="tabLabelIpd">IPD Rounds ({{ ipd_inpatients|length }})</span>
+              </button>
+            </div>
+            <div class="flex items-center gap-1 text-[11px] text-slate-400">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span class="hidden sm:inline">Live Queue</span>
+            </div>
+          </div>
+
+          <!-- OPD Token Queue List -->
+          <div id="queueListOpd" class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+            {% for b in opd_queue %}
+            <div class="p-3 rounded-xl border {% if b.queue_status == 'engaged' %}border-sky-500 bg-sky-50/40 dark:bg-sky-950/30{% elif b.queue_status == 'completed' %}border-emerald-200 bg-emerald-50/20 dark:bg-emerald-950/20 opacity-75{% else %}border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850 hover:border-sky-300 dark:hover:border-sky-700{% endif %} flex items-center justify-between gap-3 group transition cursor-pointer" id="queueCard_{{ b.id }}" onclick="attendPatient('{{ b.id }}', '{{ b.patient.id }}', '{{ b.patient.name|escapejs }}', '{{ b.patient.phone|escapejs }}', '{{ b.patient.age|default:'' }}', '{{ b.patient.gender }}', false, '', '{{ b.token_number|default:forloop.counter }}')">
+              
+              <!-- Token Badge -->
+              <div class="w-10 h-10 rounded-xl {% if b.queue_status == 'engaged' %}bg-sky-600 text-white animate-pulse{% elif b.queue_status == 'completed' %}bg-emerald-600 text-white{% else %}bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200{% endif %} flex flex-col items-center justify-center font-mono shrink-0 shadow-2xs">
+                <span class="text-[9px] font-bold leading-none uppercase">Tk</span>
+                <span class="text-sm font-extrabold leading-tight">#{{ b.token_number|default:forloop.counter }}</span>
+              </div>
+
+              <!-- Patient Info & Arrival -->
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 mb-0.5">
+                  <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">{{ b.patient.name }}</h4>
+                  <span class="px-1.5 py-0.2 rounded text-[10px] font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                    {{ b.patient.patient_id }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                  <span>+91 {{ b.patient.phone }}</span>
+                  <span>·</span>
+                  <span class="font-medium text-amber-600 dark:text-amber-400">
+                    Est: ~{{ b.estimated_wait_minutes|default:"0" }}m
+                  </span>
+                </div>
+              </div>
+
+              <!-- Attend Button -->
+              <div class="flex items-center gap-1.5 shrink-0">
+                {% if b.queue_status == 'completed' %}
+                <span class="px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold flex items-center gap-0.5">
+                  <span class="material-symbols-outlined text-[13px]">check</span>
+                  Done
+                </span>
+                {% else %}
+                <button type="button"
+                  onclick="attendPatient('{{ b.id }}', '{{ b.patient.id }}', '{{ b.patient.name|escapejs }}', '{{ b.patient.phone|escapejs }}', '{{ b.patient.age|default:'' }}', '{{ b.patient.gender }}', false, '', '{{ b.token_number|default:forloop.counter }}')"
+                  class="px-2.5 py-1.5 rounded-lg {% if b.queue_status == 'engaged' %}bg-amber-600 hover:bg-amber-700 text-white{% else %}bg-sky-600 hover:bg-sky-700 text-white{% endif %} font-semibold text-[11px] transition flex items-center gap-1 shadow-2xs">
+                  <span class="material-symbols-outlined text-[14px]">call</span>
+                  <span>{% if b.queue_status == 'engaged' %}Active{% else %}Call & Attend{% endif %}</span>
+                </button>
+                {% endif %}
+              </div>
+            </div>
+            {% empty %}
+            <div class="py-8 text-center text-slate-400 dark:text-slate-500">
+              <span class="material-symbols-outlined text-3xl mb-1 text-slate-300 dark:text-slate-600">done_all</span>
+              <p class="text-xs">No active outpatients in queue today</p>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- IPD Inpatients List -->
+          <div id="queueListIpd" class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1 hidden">
+            {% for p in ipd_inpatients %}
+            <div class="p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-purple-400 dark:hover:border-purple-600 transition bg-slate-50/50 dark:bg-slate-850 flex items-center justify-between gap-3 cursor-pointer" onclick="attendPatient('', '{{ p.id }}', '{{ p.name|escapejs }}', '{{ p.phone|escapejs }}', '{{ p.age|default:'' }}', '{{ p.gender }}', true, '{{ p.room_bed_number|escapejs }}', '')">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 mb-0.5">
+                  <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">{{ p.name }}</h4>
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                    Bed: {{ p.room_bed_number|default:"Ward" }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                  <span>Admitted: {{ p.admission_date|date:"d M" }}</span>
+                  <span>·</span>
+                  <span>+91 {{ p.phone }}</span>
+                </div>
+              </div>
+              <button type="button" onclick="attendPatient('', '{{ p.id }}', '{{ p.name|escapejs }}', '{{ p.phone|escapejs }}', '{{ p.age|default:'' }}', '{{ p.gender }}', true, '{{ p.room_bed_number|escapejs }}', '')" class="px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold text-[11px] shrink-0 transition flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">stethoscope</span>
+                <span>Rounds Rx</span>
+              </button>
+            </div>
+            {% empty %}
+            <div class="py-8 text-center text-slate-400 dark:text-slate-500">
+              <span class="material-symbols-outlined text-3xl mb-1 text-slate-300 dark:text-slate-600">bed</span>
+              <p class="text-xs">No active admitted inpatients in wards</p>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- 3. DATE-ORDERED PATIENT CASE HISTORY TIMELINE (Today's by default + filters) -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-3.5">
+          
+          <!-- History Header & Date Filters -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h3 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[17px] text-amber-600">calendar_month</span>
+                Patient Case History Timeline
+              </h3>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Showing <strong>{% if history_filter == 'today' %}Today's Case History ({{ today_date|date:"d M Y" }}){% elif history_filter == 'all' %}All Recorded History{% elif history_filter == 'inpatient' %}Inpatient Ward Notes{% else %}{{ filter_date_str }}{% endif %}</strong></p>
+            </div>
+
+            <!-- Date Filter Toggle Pills -->
+            <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs overflow-x-auto no-scrollbar shrink-0">
+              <a href="?history_filter=today" class="px-2.5 py-1 rounded-lg font-semibold transition {% if history_filter == 'today' %}bg-amber-600 text-white shadow-2xs{% else %}text-slate-600 dark:text-slate-300 hover:text-slate-900{% endif %}">
+                Today
+              </a>
+              <a href="?history_filter=all" class="px-2.5 py-1 rounded-lg font-semibold transition {% if history_filter == 'all' %}bg-amber-600 text-white shadow-2xs{% else %}text-slate-600 dark:text-slate-300 hover:text-slate-900{% endif %}">
+                All Dates
+              </a>
+              <a href="?history_filter=inpatient" class="px-2.5 py-1 rounded-lg font-semibold transition {% if history_filter == 'inpatient' %}bg-amber-600 text-white shadow-2xs{% else %}text-slate-600 dark:text-slate-300 hover:text-slate-900{% endif %}">
+                IPD Rounds
+              </a>
+            </div>
+          </div>
+
+          <!-- Date Picker for custom date history review -->
+          <form method="GET" action="" class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 text-xs">
+            <input type="hidden" name="history_filter" value="custom">
+            <span class="material-symbols-outlined text-[16px] text-slate-400">filter_alt</span>
+            <label class="text-[11px] font-semibold text-slate-600 dark:text-slate-400">Review Specific Date:</label>
+            <input type="date" name="history_date" value="{{ filter_date_str }}" class="px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono">
+            <button type="submit" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-semibold transition">
+              Filter
+            </button>
+            {% if history_filter != 'today' %}
+            <a href="?history_filter=today" class="text-[11px] text-slate-500 hover:text-slate-700 underline ml-auto">
+              Reset to Today
+            </a>
+            {% endif %}
+          </form>
+
+          <!-- History Feed Items -->
+          <div class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+            {% for note in history_notes %}
+            <div class="p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-850 hover:border-amber-400 transition space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-900 dark:text-white">{{ note.patient.name }}</span>
+                    <span class="px-1.5 py-0.2 rounded text-[10px] font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                      {{ note.patient.patient_id }}
+                    </span>
+                    {% if note.is_inpatient_round %}
+                    <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                      IPD Round
+                    </span>
+                    {% endif %}
+                  </div>
+                  <div class="text-[11px] text-slate-500 mt-0.5">
+                    Dr. {{ note.doctor.name }} · {{ note.provisional_diagnosis|default:"Clinical Review" }}
+                  </div>
+                </div>
+
+                <!-- Date Badge -->
+                <span class="px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-[10px] font-mono font-bold shrink-0">
+                  {{ note.note_date|date:"d M Y" }}
+                </span>
+              </div>
+
+              <!-- Note Text Content -->
+              {% if note.note_text %}
+              <div class="text-xs text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 whitespace-pre-line leading-relaxed">
+                {{ note.note_text }}
+              </div>
+              {% endif %}
+
+              <!-- Freehand Write Pad Canvas Image (If recorded) -->
+              {% if note.freehand_drawing %}
+              <div class="p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1 mb-1">
+                  <span class="material-symbols-outlined text-[13px]">draw</span>
+                  Freehand Case Scribble:
+                </span>
+                <img src="{{ note.freehand_drawing }}" alt="Clinical Drawing" class="max-h-40 w-auto rounded border border-slate-200 dark:border-slate-800 object-contain bg-white">
+              </div>
+              {% endif %}
+            </div>
+            {% empty %}
+            <div class="py-8 text-center text-slate-400 dark:text-slate-500">
+              <span class="material-symbols-outlined text-3xl mb-1 text-slate-300 dark:text-slate-600">history</span>
+              <p class="text-xs">No clinical notes recorded for this date filter</p>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- 4. Recent Prescriptions Issued -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs">
+          <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
+            <h3 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-emerald-600">history_edu</span>
+              Issued Prescriptions
+            </h3>
+            <span class="text-[11px] text-slate-400">{{ recent_prescriptions|length }} total</span>
+          </div>
+
+          <div class="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+            {% for rx in recent_prescriptions %}
+            <div class="p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-800 transition bg-slate-50/40 dark:bg-slate-850 flex items-center justify-between">
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-mono font-bold text-xs text-sky-700 dark:text-sky-400">#{{ rx.rx_number }}</span>
+                  <span class="text-xs font-semibold text-slate-800 dark:text-slate-200">{{ rx.patient.name }}</span>
+                </div>
+                <div class="text-[11px] text-slate-500">
+                  {{ rx.diagnosis|default:"General Consult" }} · {{ rx.medications.count }} item{{ rx.medications.count|pluralize }}
+                </div>
+              </div>
+              <a href="{% url 'setup_hospital:prescription_detail' hospital.slug rx.rx_number %}" target="_blank" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1 transition">
+                <span class="material-symbols-outlined text-[14px]">print</span>
+                <span>Print</span>
+              </a>
+            </div>
+            {% empty %}
+            <div class="py-6 text-center text-xs text-slate-400">
+              No recent prescriptions issued yet
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Confirmation Modal: Advice Only (No Medication) -->
+  <div id="dietaryConfirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[24px]">help</span>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white font-['Plus_Jakarta_Sans']">
+            Are you sure about this?
+          </h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+            You have not added any pharmaceutical medications to this prescription. It will be issued as a <strong>Clinical Advice & Dietary Instructions</strong> record for <strong id="dietaryModalPatientName" class="text-slate-800 dark:text-slate-200">this patient</strong>.
+          </p>
+        </div>
+      </div>
+
+      <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/80 text-[11px] text-amber-800 dark:text-amber-300 flex items-center gap-2">
+        <span class="material-symbols-outlined text-[16px] shrink-0">info</span>
+        <span>The patient will receive their computerized consultation sheet without pharmacy dispensing.</span>
+      </div>
+
+      <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <button type="button" onclick="closeDietaryConfirmModal()" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          Go Back & Add Meds
+        </button>
+        <button type="button" onclick="confirmDietaryOnlyPrescription()" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-sm transition flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[16px]">verified</span>
+          <span>Yes, Issue Advice Only</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Freehand Write Pad & Case Scribble (Pop up) -->
+  <div id="writePadModal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 hidden items-center justify-center p-3 sm:p-5">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-3xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[95vh] flex flex-col">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-[24px]">gesture</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white font-['Plus_Jakarta_Sans'] flex items-center gap-2">
+              Freehand Write Pad & Diagram Canvas
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold">Stylus / Touch / Mouse</span>
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Draw clinical notes, organ diagrams, or handwritten symptoms for <strong id="padModalPatientName" class="text-slate-800 dark:text-slate-200">Patient</strong>.</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeWritePadModal()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <!-- Drawing Tools Bar -->
+      <div class="flex items-center justify-between gap-2 flex-wrap bg-slate-50 dark:bg-slate-800/80 p-2 rounded-2xl border border-slate-200 dark:border-slate-750 shrink-0">
+        <!-- Colors -->
+        <div class="flex items-center gap-1.5">
+          <span class="text-[11px] font-bold text-slate-500 mr-1">Ink:</span>
+          <button type="button" onclick="setPadColor('#0f172a')" class="w-6 h-6 rounded-full bg-slate-900 border-2 border-white ring-2 ring-slate-400 dark:ring-slate-500 transition hover:scale-110" title="Black Pen"></button>
+          <button type="button" onclick="setPadColor('#2563eb')" class="w-6 h-6 rounded-full bg-blue-600 border-2 border-white ring-1 ring-slate-300 dark:ring-slate-600 transition hover:scale-110" title="Blue Pen"></button>
+          <button type="button" onclick="setPadColor('#dc2626')" class="w-6 h-6 rounded-full bg-rose-600 border-2 border-white ring-1 ring-slate-300 dark:ring-slate-600 transition hover:scale-110" title="Red Pen (Anomalies / Tenderness)"></button>
+          <button type="button" onclick="setPadColor('#16a34a')" class="w-6 h-6 rounded-full bg-emerald-600 border-2 border-white ring-1 ring-slate-300 dark:ring-slate-600 transition hover:scale-110" title="Green Pen"></button>
+        </div>
+
+        <div class="h-5 w-px bg-slate-300 dark:bg-slate-700 hidden sm:block"></div>
+
+        <!-- Stroke Width -->
+        <div class="flex items-center gap-1">
+          <span class="text-[11px] font-bold text-slate-500 mr-1">Stroke:</span>
+          <button type="button" id="strokeFineBtn" onclick="setPadLineWidth(2)" class="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition">Fine</button>
+          <button type="button" id="strokeMedBtn" onclick="setPadLineWidth(4)" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs transition">Medium</button>
+          <button type="button" id="strokeBoldBtn" onclick="setPadLineWidth(7)" class="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition">Bold</button>
+        </div>
+
+        <div class="h-5 w-px bg-slate-300 dark:bg-slate-700 hidden sm:block"></div>
+
+        <!-- Eraser & Clear -->
+        <div class="flex items-center gap-1">
+          <button type="button" id="eraserBtn" onclick="usePadEraser()" class="px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs flex items-center gap-1 border border-transparent hover:border-slate-200 transition" title="Eraser">
+            <span class="material-symbols-outlined text-[16px]">ink_eraser</span>
+            <span>Eraser</span>
+          </button>
+          <button type="button" onclick="clearPadCanvas()" class="px-2.5 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 font-semibold text-xs flex items-center gap-1 transition" title="Clear Canvas">
+            <span class="material-symbols-outlined text-[16px]">delete_sweep</span>
+            <span>Clear</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Pop-up Canvas Drawing Surface (Spacious viewport) -->
+      <div class="relative w-full flex-1 rounded-2xl bg-amber-50/20 dark:bg-slate-950/60 border-2 border-dashed border-indigo-200 dark:border-indigo-900 overflow-hidden shadow-inner min-h-[340px]">
+        <canvas id="doctorWritePad" class="w-full h-full write-pad-canvas bg-white dark:bg-slate-950 cursor-crosshair"></canvas>
+        
+        <div class="absolute bottom-2.5 right-3 text-[11px] text-slate-400 dark:text-slate-600 pointer-events-none font-mono flex items-center gap-1.5 bg-white/80 dark:bg-slate-900/80 px-2 py-0.5 rounded-lg border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xs">
+          <span class="material-symbols-outlined text-[14px]">edit</span>
+          <span>Digital Touch & Stylus Canvas</span>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800 shrink-0">
+        <span class="text-[11px] text-slate-500 dark:text-slate-400">
+          Click <strong>Attach & Done</strong> to link this sketch to your case notes.
+        </span>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="closeWritePadModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            Cancel
+          </button>
+          <button type="button" onclick="savePadDrawingAndCloseModal()" class="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[17px]">done</span>
+            <span>Attach & Done</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Tab Switcher between OPD Tokens and IPD Inpatients
+    function switchQueueTab(tab) {
+      const opdBtn = document.getElementById('tabBtnOpd');
+      const ipdBtn = document.getElementById('tabBtnIpd');
+      const opdList = document.getElementById('queueListOpd');
+      const ipdList = document.getElementById('queueListIpd');
+
+      if (tab === 'opd') {
+        opdBtn.className = 'px-3 py-1.5 rounded-xl font-bold text-xs bg-sky-600 text-white flex items-center gap-1.5 transition';
+        ipdBtn.className = 'px-3 py-1.5 rounded-xl font-medium text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1.5 transition';
+        opdList.classList.remove('hidden');
+        ipdList.classList.add('hidden');
+      } else {
+        ipdBtn.className = 'px-3 py-1.5 rounded-xl font-bold text-xs bg-purple-600 text-white flex items-center gap-1.5 transition';
+        opdBtn.className = 'px-3 py-1.5 rounded-xl font-medium text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1.5 transition';
+        ipdList.classList.remove('hidden');
+        opdList.classList.add('hidden');
+      }
+    }
+
+    // Active Consultation Bill Tracker
+    let activeConsultationBillId = null;
+
+    // Call & Attend Patient Workflow
+    function attendPatient(billId, pId, name, phone, age, gender, isInpatient, roomBed, tokenNum) {
+      activeConsultationBillId = billId || null;
+
+      // 1. Fill Rx form demographics
+      document.getElementById('rx_patient_id').value = pId;
+      document.getElementById('rx_name').value = name;
+      document.getElementById('rx_phone').value = phone;
+      document.getElementById('rx_age').value = age || '';
+      document.getElementById('rx_gender').value = gender || 'M';
+      document.getElementById('rx_is_inpatient').value = isInpatient ? '1' : '0';
+
+      // 2. Update Header Display
+      document.getElementById('activePatientNameHeading').textContent = name;
+      document.getElementById('activePatientMetaHeading').textContent = `${phone} · Age: ${age || '--'}, Gender: ${gender}`;
+      
+      const tokenBadge = document.getElementById('activeTokenBadge');
+      if (tokenNum) {
+        tokenBadge.textContent = `Token #${tokenNum}`;
+        tokenBadge.classList.remove('hidden');
+      } else {
+        tokenBadge.classList.add('hidden');
+      }
+
+      const formTypeBadge = document.getElementById('patientFormTypeBadge');
+      const patientTypeBadge = document.getElementById('patientTypeBadge');
+      if (isInpatient) {
+        formTypeBadge.textContent = `Inpatient (Bed: ${roomBed || 'Ward'})`;
+        formTypeBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800';
+        patientTypeBadge.textContent = `Inpatient (Bed: ${roomBed || 'Ward'})`;
+        patientTypeBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800';
+      } else {
+        formTypeBadge.textContent = 'Outpatient (OPD)';
+        formTypeBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300';
+        patientTypeBadge.textContent = 'Outpatient (OPD)';
+        patientTypeBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-200 dark:border-sky-800';
+      }
+
+      // 3. Mark queue status as ENGAGED via AJAX if bill exists
+      if (billId) {
+        const formData = new FormData();
+        formData.append('bill_id', billId);
+        formData.append('status', 'engaged');
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch("{% url 'setup_hospital:update_queue_status_ajax' hospital.slug %}", {
+          method: 'POST',
+          body: formData,
+        }).then(res => res.json()).then(data => {
+          const card = document.getElementById('queueCard_' + billId);
+          if (card) {
+            card.className = 'p-3 rounded-xl border border-sky-500 bg-sky-50/40 dark:bg-sky-950/30 flex items-center justify-between gap-3 group transition';
+          }
+        }).catch(err => console.error(err));
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function scrollSection(id) {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Modal controls for Freehand Write Pad
+    function openWritePadModal() {
+      const patientName = document.getElementById('rx_name')?.value?.trim() || 'Active Patient';
+      const patientNameSpan = document.getElementById('padModalPatientName');
+      if (patientNameSpan) {
+        patientNameSpan.textContent = patientName;
+      }
+
+      const modal = document.getElementById('writePadModal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      // Resize canvas to match modal viewport upon opening
+      setTimeout(() => {
+        resizePadCanvas();
+      }, 50);
+    }
+
+    function closeWritePadModal() {
+      const modal = document.getElementById('writePadModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function savePadDrawingAndCloseModal() {
+      const badge = document.getElementById('attachedDrawingBadge');
+      if (badge) {
+        badge.classList.remove('hidden');
+        badge.classList.add('flex');
+      }
+      closeWritePadModal();
+    }
+
+    // Complete Consultation without issuing prescription (Routine checkup, normal lab review, advice only)
+    function markActiveConsultationCompleted() {
+      if (!activeConsultationBillId) {
+        const patientName = document.getElementById('rx_name').value.trim();
+        if (patientName) {
+          alert(`Consultation for ${patientName} completed.`);
+          window.location.reload();
+        } else {
+          alert('Please select an active patient from the queue first.');
+        }
+        return;
+      }
+
+      const btn = document.getElementById('markConsultDoneBtn');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="material-symbols-outlined text-[17px] animate-spin">refresh</span><span>Saving...</span>`;
+
+      const formData = new FormData();
+      formData.append('bill_id', activeConsultationBillId);
+      formData.append('status', 'completed');
+      formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+      fetch("{% url 'setup_hospital:update_queue_status_ajax' hospital.slug %}", {
+        method: 'POST',
+        body: formData,
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          // Update queue card visual state
+          const card = document.getElementById('queueCard_' + activeConsultationBillId);
+          if (card) {
+            card.className = 'p-3 rounded-xl border border-emerald-200 bg-emerald-50/20 dark:bg-emerald-950/20 opacity-75 flex items-center justify-between gap-3 group transition';
+            const actionContainer = card.querySelector('.shrink-0');
+            if (actionContainer) {
+              actionContainer.innerHTML = `<span class="px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold flex items-center gap-0.5"><span class="material-symbols-outlined text-[13px]">check</span>Done</span>`;
+            }
+          }
+          btn.innerHTML = `<span class="material-symbols-outlined text-[17px]">done_all</span><span>Completed ✓</span>`;
+          btn.className = 'px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition';
+          setTimeout(() => {
+            window.location.reload();
+          }, 600);
+        } else {
+          alert('Could not update status: ' + (data.message || 'Error'));
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        alert('Network error while completing consultation.');
+      });
+    }
+
+    // Prescription Multiple Medication Items
+    function addRxMedRow() {
+      const container = document.getElementById('rxMedicinesContainer');
+      const firstRow = container.querySelector('.rx-med-row');
+      const clone = firstRow.cloneNode(true);
+
+      clone.querySelectorAll('input').forEach(i => {
+        if (i.name === 'med_quantity') i.value = '10';
+        else if (i.name === 'med_duration') i.value = '5 Days';
+        else i.value = '';
+      });
+
+      container.appendChild(clone);
+      updateRxItemCount();
+    }
+
+    function updateRxItemCount() {
+      let count = 0;
+      document.querySelectorAll('.rx-med-row').forEach(row => {
+        const val = row.querySelector('input[name="med_name"]')?.value.trim();
+        if (val) count++;
+      });
+      document.getElementById('rxItemCount').textContent = count;
+    }
+
+    // Freehand Canvas Write Pad Engine
+    let canvas, ctx;
+    let isDrawing = false;
+    let currentColor = '#0f172a';
+    let currentLineWidth = 4;
+    let isEraser = false;
+
+    function initWritePad() {
+      canvas = document.getElementById('doctorWritePad');
+      if (!canvas) return;
+      ctx = canvas.getContext('2d');
+
+      resizePadCanvas();
+
+      // Mouse Listeners
+      canvas.addEventListener('mousedown', startDrawing);
+      canvas.addEventListener('mousemove', draw);
+      window.addEventListener('mouseup', stopDrawing);
+
+      // Touch / Stylus Listeners (for iPads, Tablets & Touch Laptops)
+      canvas.addEventListener('touchstart', startTouchDrawing, { passive: false });
+      canvas.addEventListener('touchmove', touchDraw, { passive: false });
+      window.addEventListener('touchend', stopDrawing);
+    }
+
+    function resizePadCanvas() {
+      if (!canvas || !ctx) return;
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      
+      const width = rect.width || 700;
+      const height = rect.height || 360;
+
+      // Preserve existing drawing content during resize if already drawn
+      let tempCanvas = null;
+      if (canvas.width > 0 && canvas.height > 0) {
+        tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(canvas, 0, 0);
+      }
+
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.scale(dpr, dpr);
+
+      if (tempCanvas) {
+        ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width / dpr, tempCanvas.height / dpr);
+      }
+
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = isEraser ? '#ffffff' : currentColor;
+      ctx.lineWidth = isEraser ? 18 : currentLineWidth;
+    }
+
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    }
+
+    function startDrawing(e) {
+      isDrawing = true;
+      const coords = getCanvasCoords(e);
+      ctx.beginPath();
+      ctx.moveTo(coords.x, coords.y);
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      const coords = getCanvasCoords(e);
+      ctx.lineTo(coords.x, coords.y);
+      ctx.stroke();
+    }
+
+    function startTouchDrawing(e) {
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        ctx.beginPath();
+        ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+      }
+    }
+
+    function touchDraw(e) {
+      e.preventDefault();
+      if (!isDrawing || e.touches.length !== 1) return;
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+      ctx.stroke();
+    }
+
+    function stopDrawing() {
+      if (isDrawing) {
+        isDrawing = false;
+        ctx.closePath();
+      }
+    }
+
+    function setPadColor(color) {
+      isEraser = false;
+      currentColor = color;
+      ctx.strokeStyle = color;
+      ctx.globalCompositeOperation = 'source-over';
+      document.getElementById('eraserBtn')?.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-2xs');
+    }
+
+    function setPadLineWidth(width) {
+      currentLineWidth = width;
+      ctx.lineWidth = width;
+
+      const fine = document.getElementById('strokeFineBtn');
+      const med = document.getElementById('strokeMedBtn');
+      const bold = document.getElementById('strokeBoldBtn');
+      [fine, med, bold].forEach(b => b?.classList.remove('bg-white', 'dark:bg-slate-700', 'text-slate-900', 'dark:text-white', 'shadow-2xs'));
+      
+      if (width === 2) fine?.classList.add('bg-white', 'dark:bg-slate-700', 'text-slate-900', 'dark:text-white', 'shadow-2xs');
+      else if (width === 4) med?.classList.add('bg-white', 'dark:bg-slate-700', 'text-slate-900', 'dark:text-white', 'shadow-2xs');
+      else if (width === 7) bold?.classList.add('bg-white', 'dark:bg-slate-700', 'text-slate-900', 'dark:text-white', 'shadow-2xs');
+    }
+
+    function usePadEraser() {
+      isEraser = true;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 18;
+      document.getElementById('eraserBtn')?.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-2xs');
+    }
+
+    function clearPadCanvas() {
+      if (!canvas || !ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const badge = document.getElementById('attachedDrawingBadge');
+      if (badge) {
+        badge.classList.add('hidden');
+        badge.classList.remove('flex');
+      }
+    }
+
+    // Save Freehand Pad to Patient's Longitudinal History Timeline
+    function savePadToHistory() {
+      const patientId = document.getElementById('rx_patient_id').value;
+      if (!patientId) {
+        alert('Please select a patient from the queue first to save history notes.');
+        return;
+      }
+
+      // Export canvas drawing as PNG base64
+      const drawingData = canvas.toDataURL('image/png');
+      const typedNote = document.getElementById('padTypedNotes').value.trim();
+      const diagnosis = document.getElementById('rx_diagnosis_input').value.trim();
+      const isInpatient = document.getElementById('rx_is_inpatient').value === '1';
+
+      const formData = new FormData();
+      formData.append('patient_id', patientId);
+      formData.append('doctor_id', '{{ doctor.id }}');
+      formData.append('note_text', typedNote);
+      formData.append('provisional_diagnosis', diagnosis);
+      formData.append('freehand_drawing', drawingData);
+      formData.append('is_inpatient', isInpatient);
+      formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+      fetch("{% url 'setup_hospital:save_clinical_note_ajax' hospital.slug %}", {
+        method: 'POST',
+        body: formData,
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          alert('✓ Freehand drawing & clinical note saved to patient case timeline!');
+          clearPadCanvas();
+          document.getElementById('padTypedNotes').value = '';
+          // Reload timeline smoothly
+          window.location.reload();
+        } else {
+          alert('Error saving clinical note: ' + (data.message || 'Unknown error'));
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Failed to save note. Please check network connection.');
+      });
+    }
+
+    // Check if any medication was added or if dietary advice only
+    let allowDietarySubmission = false;
+
+    function handleDoctorRxSubmit(e) {
+      if (allowDietarySubmission) {
+        allowDietarySubmission = false;
+        return true;
+      }
+
+      // Check if any medicine row has a medicine name
+      let medCount = 0;
+      document.querySelectorAll('.rx-med-row').forEach(row => {
+        const val = row.querySelector('input[name="med_name"]')?.value.trim();
+        if (val) medCount++;
+      });
+
+      if (medCount === 0) {
+        e.preventDefault();
+        openDietaryConfirmModal();
+        return false;
+      }
+
+      return true;
+    }
+
+    function openDietaryConfirmModal() {
+      const modal = document.getElementById('dietaryConfirmModal');
+      const patientName = document.getElementById('rx_name').value.trim() || 'this patient';
+      document.getElementById('dietaryModalPatientName').textContent = patientName;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeDietaryConfirmModal() {
+      const modal = document.getElementById('dietaryConfirmModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function confirmDietaryOnlyPrescription() {
+      allowDietarySubmission = true;
+      closeDietaryConfirmModal();
+      document.getElementById('doctorRxForm').submit();
+    }
+
+    // --- REAL-TIME LIVE QUEUE POLLING ---
+    let isPolling = false;
+
+    function pollDoctorQueue() {
+      if (isPolling) return;
+      isPolling = true;
+
+      const url = "{% url 'setup_hospital:doctor_queue_poll_ajax' hospital.slug %}{% if doctor %}?doctor_id={{ doctor.id }}{% endif %}";
+
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          isPolling = false;
+          if (data.status !== 'success') return;
+
+          // 1. Update Top Stats
+          const statOpd = document.getElementById('statOpdCount');
+          if (statOpd) {
+            statOpd.textContent = `${data.opd_count} Patient${data.opd_count === 1 ? '' : 's'}`;
+          }
+          const statIpd = document.getElementById('statIpdCount');
+          if (statIpd) {
+            statIpd.textContent = `${data.ipd_count} Patient${data.ipd_count === 1 ? '' : 's'}`;
+          }
+
+          // 2. Update Tab Labels
+          const tabLabelOpd = document.getElementById('tabLabelOpd');
+          if (tabLabelOpd) {
+            tabLabelOpd.textContent = `OPD Tokens (${data.opd_count})`;
+          }
+          const tabLabelIpd = document.getElementById('tabLabelIpd');
+          if (tabLabelIpd) {
+            tabLabelIpd.textContent = `IPD Rounds (${data.ipd_count})`;
+          }
+
+          // 3. Render OPD Queue List
+          renderLiveOpdQueue(data.opd_queue);
+
+          // 4. Render IPD Inpatients List
+          renderLiveIpdQueue(data.ipd_inpatients);
+        })
+        .catch(err => {
+          isPolling = false;
+          console.error("Queue poll error:", err);
+        });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeJsArg(str) {
+      if (!str) return '';
+      return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    function renderLiveOpdQueue(queue) {
+      const container = document.getElementById('queueListOpd');
+      if (!container) return;
+
+      if (!queue || queue.length === 0) {
+        container.innerHTML = `
+          <div class="py-8 text-center text-slate-400 dark:text-slate-500">
+            <span class="material-symbols-outlined text-3xl mb-1 text-slate-300 dark:text-slate-600">done_all</span>
+            <p class="text-xs">No active outpatients in queue today</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      queue.forEach((b, idx) => {
+        const isEngaged = (b.queue_status === 'engaged') || (String(b.id) === String(activeConsultationBillId));
+        const isCompleted = b.queue_status === 'completed';
+
+        let cardBorderClass = 'border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850 hover:border-sky-300 dark:hover:border-sky-700';
+        let badgeColorClass = 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200';
+        
+        if (isEngaged) {
+          cardBorderClass = 'border-sky-500 bg-sky-50/40 dark:bg-sky-950/30';
+          badgeColorClass = 'bg-sky-600 text-white animate-pulse';
+        } else if (isCompleted) {
+          cardBorderClass = 'border-emerald-200 bg-emerald-50/20 dark:bg-emerald-950/20 opacity-75';
+          badgeColorClass = 'bg-emerald-600 text-white';
+        }
+
+        const tokenNum = b.token_number || (idx + 1);
+        const pNameEsc = escapeJsArg(b.patient_name);
+        const pPhoneEsc = escapeJsArg(b.patient_phone);
+        const pAge = b.patient_age || '';
+        const pGender = b.patient_gender || 'other';
+
+        let actionBtnHtml = '';
+        if (isCompleted) {
+          actionBtnHtml = `
+            <span class="px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold flex items-center gap-0.5">
+              <span class="material-symbols-outlined text-[13px]">check</span>
+              Done
+            </span>
+          `;
+        } else {
+          const btnBg = isEngaged ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-sky-600 hover:bg-sky-700 text-white';
+          const btnLabel = isEngaged ? 'Active' : 'Call & Attend';
+          actionBtnHtml = `
+            <button type="button"
+              onclick="attendPatient('${b.id}', '${b.patient_id}', '${pNameEsc}', '${pPhoneEsc}', '${pAge}', '${pGender}', false, '', '${tokenNum}')"
+              class="px-2.5 py-1.5 rounded-lg ${btnBg} font-semibold text-[11px] transition flex items-center gap-1 shadow-2xs">
+              <span class="material-symbols-outlined text-[14px]">call</span>
+              <span>${btnLabel}</span>
+            </button>
+          `;
+        }
+
+        html += `
+          <div class="p-3 rounded-xl border ${cardBorderClass} flex items-center justify-between gap-3 group transition cursor-pointer"
+               id="queueCard_${b.id}"
+               onclick="attendPatient('${b.id}', '${b.patient_id}', '${pNameEsc}', '${pPhoneEsc}', '${pAge}', '${pGender}', false, '', '${tokenNum}')">
+            
+            <!-- Token Badge -->
+            <div class="w-10 h-10 rounded-xl ${badgeColorClass} flex flex-col items-center justify-center font-mono shrink-0 shadow-2xs">
+              <span class="text-[9px] font-bold leading-none uppercase">Tk</span>
+              <span class="text-sm font-extrabold leading-tight">#${tokenNum}</span>
+            </div>
+
+            <!-- Patient Info & Arrival -->
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 mb-0.5">
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">${escapeHtml(b.patient_name)}</h4>
+                <span class="px-1.5 py-0.2 rounded text-[10px] font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                  ${escapeHtml(b.patient_code)}
+                </span>
+              </div>
+              <div class="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                <span>+91 ${escapeHtml(b.patient_phone)}</span>
+                <span>·</span>
+                <span class="font-medium text-amber-600 dark:text-amber-400">
+                  Est: ~${b.estimated_wait_minutes || 0}m
+                </span>
+              </div>
+            </div>
+
+            <!-- Attend Button -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              ${actionBtnHtml}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function renderLiveIpdQueue(inpatients) {
+      const container = document.getElementById('queueListIpd');
+      if (!container) return;
+
+      if (!inpatients || inpatients.length === 0) {
+        container.innerHTML = `
+          <div class="py-8 text-center text-slate-400 dark:text-slate-500">
+            <span class="material-symbols-outlined text-3xl mb-1 text-slate-300 dark:text-slate-600">bed</span>
+            <p class="text-xs">No active admitted inpatients in wards</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      inpatients.forEach(p => {
+        const pNameEsc = escapeJsArg(p.name);
+        const pPhoneEsc = escapeJsArg(p.phone);
+        const pAge = p.age || '';
+        const pGender = p.gender || 'other';
+        const pBedEsc = escapeJsArg(p.room_bed_number);
+
+        html += `
+          <div class="p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-purple-400 dark:hover:border-purple-600 transition bg-slate-50/50 dark:bg-slate-850 flex items-center justify-between gap-3 cursor-pointer"
+               onclick="attendPatient('', '${p.id}', '${pNameEsc}', '${pPhoneEsc}', '${pAge}', '${pGender}', true, '${pBedEsc}', '')">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 mb-0.5">
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">${escapeHtml(p.name)}</h4>
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                  Bed: ${escapeHtml(p.room_bed_number || 'Ward')}
+                </span>
+              </div>
+              <div class="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                <span>Admitted: ${escapeHtml(p.admission_date)}</span>
+                <span>·</span>
+                <span>+91 ${escapeHtml(p.phone)}</span>
+              </div>
+            </div>
+            <button type="button"
+              onclick="attendPatient('', '${p.id}', '${pNameEsc}', '${pPhoneEsc}', '${pAge}', '${pGender}', true, '${pBedEsc}', '')"
+              class="px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold text-[11px] shrink-0 transition flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">stethoscope</span>
+              <span>Rounds Rx</span>
+            </button>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initWritePad();
+
+      // Auto-load First Patient in Queue if available and not yet selected
+      {% if opd_queue %}
+        {% for b in opd_queue %}
+          {% if forloop.first %}
+            attendPatient('{{ b.id }}', '{{ b.patient.id }}', '{{ b.patient.name|escapejs }}', '{{ b.patient.phone|escapejs }}', '{{ b.patient.age|default:'' }}', '{{ b.patient.gender }}', false, '', '{{ b.token_number|default:forloop.counter }}');
+          {% endif %}
+        {% endfor %}
+      {% elif ipd_inpatients %}
+        {% for p in ipd_inpatients %}
+          {% if forloop.first %}
+            attendPatient('', '{{ p.id }}', '{{ p.name|escapejs }}', '{{ p.phone|escapejs }}', '{{ p.age|default:'' }}', '{{ p.gender }}', true, '{{ p.room_bed_number|escapejs }}', '');
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+
+      // Start automatic live queue polling every 4 seconds
+      setInterval(pollDoctorQueue, 4000);
+    });
+  </script>
+</body>
+</html>

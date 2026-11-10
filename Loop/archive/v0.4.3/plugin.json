@@ -1,0 +1,49 @@
+{
+  "name": "loop",
+  "version": "0.4.3",
+  "description": "Atlas-first, local-first, platform-independent project orchestration (the platform is chosen at the start): new projects start from a flow-atlas plan, every feature is built to its map and closed by flipping it to delivered, with model routing, a 20-point legal checklist, validation, owner-friendly communication and handoff continuity.",
+  "author": {
+    "name": "NexaForge Technologies"
+  },
+  "keywords": [
+    "atlas-first",
+    "code-review",
+    "debugging",
+    "flow-atlas",
+    "handoff",
+    "local-first",
+    "model-routing",
+    "orchestration",
+    "project-starter",
+    "spec-driven-development",
+    "testing"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Loop",
+    "shortDescription": "Atlas-first delivery, starter and model routing",
+    "longDescription": "Activate when Loop is requested. For a new project, ask the start questions (platform included) in one message or read START.md, start the project from an atlas plan with scripts/loop-init.mjs (using the owner's template page when given) and begin building the first map straight away; build each feature to its map, prove it, flip the map to delivered, and keep the handoff current. Existing projects are inspected locally and can adopt the atlas.",
+    "developerName": "NexaForge Technologies",
+    "category": "Productivity",
+    "capabilities": [
+      "Atlas-first project starter",
+      "Code review",
+      "Codex child routing adapter",
+      "Flow atlas",
+      "Human model-switch fallback",
+      "Interactive",
+      "Local-first",
+      "Model routing",
+      "Spec-driven delivery",
+      "Systematic debugging",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Use Loop for this project",
+      "Start a new project with Loop",
+      "Build the next atlas map",
+      "Resume the latest Loop handoff"
+    ],
+    "brandColor": "#2563EB"
+  }
+}

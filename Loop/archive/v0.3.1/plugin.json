@@ -1,0 +1,44 @@
+{
+  "name": "loop",
+  "version": "0.3.1",
+  "description": "Local-first project orchestration with feature-level error-surface audits, a Codex child-launch adapter for model routing, human fallback, validation, recovery, and continuity.",
+  "author": {
+    "name": "NexaForge Technologies"
+  },
+  "keywords": [
+    "orchestration",
+    "model-routing",
+    "local-first",
+    "handoff",
+    "testing",
+    "spec-driven-development",
+    "debugging",
+    "code-review"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Loop",
+    "shortDescription": "Spec-driven delivery and model routing",
+    "longDescription": "Activate directly when Loop is requested; discover greenfield intent before project mutation, inspect existing projects locally, create durable delivery tracks, route bounded tasks, verify before completion, recover safely, and preserve continuity.",
+    "developerName": "NexaForge Technologies",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write",
+      "Model routing",
+      "Codex child routing adapter",
+      "Human model-switch fallback",
+      "Local-first",
+      "Spec-driven delivery",
+      "Systematic debugging",
+      "Code review"
+    ],
+    "defaultPrompt": [
+      "Use Loop for this project",
+      "Apply Loop to this project",
+      "Route and implement this task",
+      "Resume the latest Loop handoff"
+    ],
+    "brandColor": "#2563EB"
+  }
+}

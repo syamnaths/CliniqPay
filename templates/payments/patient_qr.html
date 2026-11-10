@@ -1,0 +1,89 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pay ₹{{ bill.total_amount }} — {{ hospital.name }}</title>
+  <link rel="icon" type="image/png" href="{% static 'images/original-icon-mark.png' %}"/>
+  <script src="{% static 'vendor/tailwind.min.js' %}"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <meta http-equiv="refresh" content="5">
+</head>
+<body class="bg-slate-900 text-slate-100 font-['Inter'] min-h-screen flex items-center justify-center p-4">
+  <div class="max-w-md w-full bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl text-center relative overflow-hidden">
+    
+    <!-- Top Clinic Branding -->
+    <div class="mb-6">
+      <img src="{% static 'images/original-staked.png' %}" alt="Cliniqpay Logo" class="h-10 w-auto mx-auto mb-3 object-contain"/>
+      <h1 class="text-xl font-bold font-['Plus_Jakarta_Sans'] text-white">{{ hospital.name }}</h1>
+      <p class="text-xs text-slate-400">Digital UPI Cashier Counter</p>
+    </div>
+
+    {% if bill.status == 'paid' %}
+    <!-- If bill is paid, show instant success state -->
+    <div class="py-8">
+      <div class="w-20 h-20 bg-teal-500/20 text-teal-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-teal-500/30">
+        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+      </div>
+      <span class="inline-flex items-center px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-semibold uppercase tracking-wider mb-2">
+        Payment Received
+      </span>
+      <h2 class="text-3xl font-extrabold font-mono text-white mt-1">₹{{ bill.total_amount }}</h2>
+      <p class="text-xs text-slate-400 mt-2">Thank you, {{ bill.patient.name }}! Your receipt has been generated.</p>
+    </div>
+    {% else %}
+    <!-- Dynamic Payment Card -->
+    <div class="bg-gradient-to-b from-teal-500/10 to-transparent border border-teal-500/30 rounded-2xl p-6 mb-6 shadow-inner">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 border border-teal-500/30 text-teal-300 text-xs font-semibold mb-3">
+        <span class="w-2 h-2 rounded-full bg-teal-400 animate-ping"></span>
+        Scan & Pay with Any UPI App
+      </div>
+
+      <div class="text-3xl font-black font-mono text-teal-400 mb-1">
+        ₹{{ bill.total_amount }}
+      </div>
+      <div class="text-xs text-slate-400 mb-4">
+        Invoice: <strong class="text-slate-200 font-mono">{{ bill.bill_number }}</strong> · Patient: <strong class="text-slate-200">{{ bill.patient.name }}</strong>
+      </div>
+
+      <!-- Scannable Dynamic QR Code -->
+      <div class="bg-white p-4 rounded-2xl border-2 border-teal-500/40 inline-block shadow-2xl mx-auto mb-4">
+        <img src="{{ qr_code_url }}" alt="Scan UPI QR Code" class="w-56 h-56 object-contain mx-auto"/>
+      </div>
+
+      <!-- Supported Apps -->
+      <div class="flex items-center justify-center gap-3 text-[11px] text-slate-400 font-medium">
+        <span>Google Pay</span>
+        <span>·</span>
+        <span>PhonePe</span>
+        <span>·</span>
+        <span>Paytm</span>
+        <span>·</span>
+        <span>BHIM UPI</span>
+      </div>
+
+      <div class="text-[11px] text-slate-500 font-mono mt-3">
+        Verified Payee: <span class="text-slate-300">{{ hospital.upi_id|default:"bnv@upi" }}</span>
+      </div>
+    </div>
+
+    <!-- Direct UPI App Intent Link (For Patient Mobile Browser) -->
+    <a href="{{ upi_uri }}" class="sm:hidden block w-full py-3 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-semibold text-xs rounded-xl shadow-lg shadow-teal-500/20 transition mb-3">
+      Open in UPI App to Pay
+    </a>
+
+    <p class="text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
+      <span class="material-symbols-outlined text-[14px] text-teal-400">sync</span>
+      <span>Screen updates automatically once payment is detected</span>
+    </p>
+    {% endif %}
+
+    <div class="mt-6 pt-4 border-t border-slate-700/60 text-center">
+      <span class="text-[11px] text-slate-500">Secured by CliniqPay UPI Healthcare Rails</span>
+    </div>
+
+  </div>
+</body>
+</html>

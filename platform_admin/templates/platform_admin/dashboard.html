@@ -1,0 +1,122 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Master Administration — CliniqPay</title>
+  <link rel="icon" type="image/png" href="{% static 'images/original-icon-mark.png' %}"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+</head>
+<body class="bg-slate-50 text-slate-900 font-['Inter'] min-h-screen">
+  <!-- Top Navigation -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <img src="{% static 'images/original-staked.png' %}" alt="Cliniqpay Logo" class="h-10 w-auto"/>
+        <span class="px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold uppercase tracking-wider">
+          Master Console
+        </span>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="text-sm text-slate-600">Logged in as <strong class="text-slate-900">{{ request.user.username }}</strong></span>
+        <a href="/admin/logout/" class="text-sm font-medium text-rose-600 hover:text-rose-700">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    <!-- Stat Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <span class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Total Enrolled</span>
+        <div class="text-3xl font-bold text-slate-900 mt-2">{{ enrollments.count }}</div>
+      </div>
+      <div class="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm bg-amber-50/30">
+        <span class="text-xs font-semibold uppercase text-amber-700 tracking-wider">Pending Review</span>
+        <div class="text-3xl font-bold text-amber-900 mt-2">{{ pending_count }}</div>
+      </div>
+      <div class="bg-white p-6 rounded-2xl border border-teal-200 shadow-sm bg-teal-50/30">
+        <span class="text-xs font-semibold uppercase text-teal-700 tracking-wider">Active Clinics</span>
+        <div class="text-3xl font-bold text-teal-900 mt-2">{{ activated_count }}</div>
+      </div>
+    </div>
+
+    <!-- Requests Table -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h2 class="text-lg font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Hospital Enrollment Requests</h2>
+        <span class="text-xs text-slate-500">Real-time tenant requests</span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold border-b border-slate-200">
+            <tr>
+              <th class="px-6 py-3.5">Hospital / Clinic</th>
+              <th class="px-6 py-3.5">Location</th>
+              <th class="px-6 py-3.5">Administrator</th>
+              <th class="px-6 py-3.5">Contact Phone & Email</th>
+              <th class="px-6 py-3.5">Status</th>
+              <th class="px-6 py-3.5 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for item in enrollments %}
+            <tr class="hover:bg-slate-50/80 transition-colors">
+              <td class="px-6 py-4">
+                <div class="font-semibold text-slate-900">{{ item.hospital_name }}</div>
+                <div class="text-xs text-slate-400 font-mono">{{ item.reference_token|stringformat:"s"|slice:":8" }}...</div>
+              </td>
+              <td class="px-6 py-4 text-slate-600">{{ item.city }}, {{ item.state }}</td>
+              <td class="px-6 py-4 text-slate-800">{{ item.admin_full_name }}</td>
+              <td class="px-6 py-4">
+                <div class="text-slate-900 font-medium">+91 {{ item.contact_phone }}</div>
+                <div class="text-xs text-slate-500">{{ item.contact_email }}</div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold
+                  {% if item.status == 'activated' %}bg-green-100 text-green-800
+                  {% elif item.status == 'rejected' %}bg-rose-100 text-rose-800
+                  {% else %}bg-amber-100 text-amber-800{% endif %}">
+                  {{ item.get_status_display }}
+                </span>
+                {% if item.reviewed_by %}
+                <div class="text-[10px] text-slate-400 mt-1">by {{ item.reviewed_by }}</div>
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 text-right space-x-2">
+                {% if item.status == 'pending_review' %}
+                <form action="{% url 'platform_admin:approve' item.pk %}" method="POST" class="inline">
+                  {% csrf_token %}
+                  <button type="submit" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-semibold shadow-sm transition">
+                    Approve & Activate
+                  </button>
+                </form>
+                <form action="{% url 'platform_admin:reject' item.pk %}" method="POST" class="inline">
+                  {% csrf_token %}
+                  <button type="submit" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-semibold transition">
+                    Reject
+                  </button>
+                </form>
+                {% else %}
+                <span class="text-xs text-slate-400">Processed</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+                No hospital enrollment requests found.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

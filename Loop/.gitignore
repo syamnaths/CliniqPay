@@ -1,0 +1,31 @@
+# Loop framework .gitignore
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python and Node caches
+__pycache__/
+*.py[cod]
+node_modules/
+.pytest_cache/
+
+# Packaged copies and cleanup folder
+*.tgz
+_to_delete/
+
+# Test output
+test-results/
+playwright-report/
+*.log
+
+# OS and editor files
+.DS_Store
+._*
+Thumbs.db
+.idea/
+.vscode/
+*.swp

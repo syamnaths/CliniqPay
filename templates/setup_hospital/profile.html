@@ -1,0 +1,181 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ request.user.username }} — User Profile | {{ hospital.name }}</title>
+  <link rel="icon" type="image/png" href="{% static 'images/original-icon-mark.png' %}"/>
+  <script src="{% static 'vendor/tailwind.min.js' %}"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  {% include 'includes/theme_head.html' %}
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-['Inter'] min-h-screen transition-colors">
+
+  <!-- Header -->
+  <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-sm transition-colors">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="/">
+          <!-- Mobile: Mark icon only -->
+          <img src="{% static 'images/original-icon-mark.png' %}" alt="Cliniqpay Logo" class="h-8 w-auto object-contain sm:hidden"/>
+          <!-- Tablet & Desktop: Full stacked logo -->
+          <img src="{% static 'images/original-staked.png' %}" alt="Cliniqpay Logo" class="hidden sm:inline-block h-9 w-auto object-contain"/>
+        </a>
+        <div class="h-6 w-px bg-slate-200 dark:bg-slate-800"></div>
+        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider font-['Plus_Jakarta_Sans']">User Profile</span>
+      </div>
+
+      <!-- Desktop Action Bar -->
+      <div class="hidden sm:flex items-center gap-3">
+        {% include 'includes/theme_toggle_btn.html' %}
+        
+        {% if role == 'admin' %}
+        <a href="{% url 'setup_hospital:dashboard' hospital.slug %}" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1 transition">
+          <span class="material-symbols-outlined text-[16px]">tune</span>
+          <span>Admin Settings</span>
+        </a>
+        {% endif %}
+        
+        <a href="{% url 'billing:counter' hospital.slug %}" class="px-3 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 text-xs font-semibold flex items-center gap-1 transition">
+          <span class="material-symbols-outlined text-[16px]">point_of_sale</span>
+          <span>Cashier Desk</span>
+        </a>
+
+        <a href="{% url 'setup_hospital:logout' hospital.slug %}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 transition">
+          Sign Out
+        </a>
+      </div>
+
+      <!-- Mobile Right Section (Theme Toggle + Hamburger Menu) -->
+      <div class="flex sm:hidden items-center gap-2">
+        {% include 'includes/theme_toggle_btn.html' %}
+        <button id="mobileMenuBtn" type="button" onclick="document.getElementById('mobileNavDrawer').classList.toggle('hidden')" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center" aria-label="Open navigation menu">
+          <span class="material-symbols-outlined text-[22px]">menu</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Navigation Drawer -->
+    <div id="mobileNavDrawer" class="hidden sm:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 space-y-2">
+      <div class="pb-2 border-b border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+        Hospital: <strong class="text-slate-800 dark:text-slate-200">{{ hospital.name }}</strong> ({{ hospital.city }})
+      </div>
+      <a href="{% url 'billing:counter' hospital.slug %}" class="w-full py-2 px-3 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 text-xs font-semibold flex items-center gap-2">
+        <span class="material-symbols-outlined text-[18px]">point_of_sale</span>
+        <span>Go to Cashier Desk</span>
+      </a>
+      {% if role == 'admin' %}
+      <a href="{% url 'setup_hospital:dashboard' hospital.slug %}" class="w-full py-2 px-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-2">
+        <span class="material-symbols-outlined text-[18px]">tune</span>
+        <span>Hospital Settings</span>
+      </a>
+      <a href="{% url 'summary:daily_report' hospital.slug %}" class="w-full py-2 px-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-2">
+        <span class="material-symbols-outlined text-[18px]">summarize</span>
+        <span>8 PM Daily Summary</span>
+      </a>
+      {% endif %}
+      <a href="{% url 'setup_hospital:logout' hospital.slug %}" class="w-full py-2 px-3 rounded-lg text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2">
+        <span class="material-symbols-outlined text-[18px]">logout</span>
+        <span>Sign Out</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8">
+
+    <!-- Hospital Organization Banner (Moved out of header for clean UX) -->
+    <div class="p-4 sm:p-5 rounded-2xl bg-teal-50/60 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/60 flex items-center justify-between text-xs transition-colors">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold text-base shadow-sm">
+          <span class="material-symbols-outlined text-[20px]">local_hospital</span>
+        </div>
+        <div>
+          <span class="text-[10px] text-teal-800 dark:text-teal-300 font-bold uppercase tracking-wider block">Assigned Organization</span>
+          <h2 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight">{{ hospital.name }}</h2>
+          <span class="text-slate-500 dark:text-slate-400 text-[11px]">{{ hospital.city }}, {{ hospital.state }} · GSTIN: {{ hospital.gstin|default:"N/A" }}</span>
+        </div>
+      </div>
+      <div class="text-right hidden sm:block">
+        <span class="px-2.5 py-1 rounded-full bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200 text-xs font-semibold">
+          Active Workspace
+        </span>
+      </div>
+    </div>
+
+    {% if success_msg %}
+    <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-semibold flex items-center gap-2">
+      <span class="material-symbols-outlined text-emerald-600 text-[20px]">check_circle</span>
+      <span>{{ success_msg }}</span>
+    </div>
+    {% endif %}
+
+    {% if error_msg %}
+    <div class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs font-semibold flex items-center gap-2">
+      <span class="material-symbols-outlined text-rose-600 text-[20px]">error</span>
+      <span>{{ error_msg }}</span>
+    </div>
+    {% endif %}
+
+    <!-- Profile Overview Card -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm transition-colors">
+      <div class="flex items-center gap-4 sm:gap-5 pb-6 border-b border-slate-100 dark:border-slate-800">
+        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-teal-500 to-teal-600 text-white flex items-center justify-center font-bold text-xl sm:text-2xl shadow-md flex-shrink-0">
+          {{ request.user.username|slice:":1"|upper }}
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-bold font-['Plus_Jakarta_Sans'] text-slate-900 dark:text-white leading-tight">
+            {{ request.user.first_name|default:request.user.username }}
+          </h1>
+          <div class="flex items-center gap-2 mt-1">
+            <span class="px-2.5 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 text-xs font-semibold uppercase tracking-wider">
+              {{ role|upper }} ROLE
+            </span>
+            <span class="text-xs text-slate-400 font-mono">{{ request.user.username }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account Details & Password Change Form -->
+      <form method="POST" class="mt-6 space-y-6">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Full Name / Display Name</label>
+            <input type="text" name="first_name" value="{{ request.user.first_name }}" placeholder="e.g. Sreejith Nair" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-white focus:outline-teal-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Official Username</label>
+            <input type="text" readonly value="{{ request.user.username }}" class="w-full px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-500 cursor-not-allowed">
+          </div>
+        </div>
+
+        <div class="pt-6 border-t border-slate-100 dark:border-slate-800">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-teal-600">lock_reset</span>
+            <span>Update Account Password</span>
+          </h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">New Password</label>
+              <input type="password" name="new_password" placeholder="At least 6 characters" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-teal-500">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Confirm New Password</label>
+              <input type="password" name="confirm_password" placeholder="Re-enter password" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-teal-500">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-sm transition">
+          Save Profile & Password
+        </button>
+      </form>
+    </div>
+
+  </main>
+
+</body>
+</html>

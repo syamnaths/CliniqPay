@@ -1,0 +1,77 @@
+# Loop project .gitignore (platform lines are added below by loop-init.mjs)
+# Keep: .loop/, docs/app-map/, design/, Loop/, HANDOFF.md, AGENTS.md (they are the project record)
+
+# Secrets and keys — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials*.json
+service-account*.json
+
+# Dependencies
+node_modules/
+.pnpm-store/
+vendor/bundle/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Build output
+dist/
+build/
+out/
+coverage/
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+.turbo/
+.vercel/
+.netlify/
+
+# Test and browser output (keep these temporary)
+test-results/
+playwright-report/
+blob-report/
+screenshots/tmp/
+*.trace.zip
+
+# Logs and temp files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tmp
+*.swp
+*.bak
+tmp/
+temp/
+
+# OS and editor files
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.code-workspace
+
+# Local databases and uploads
+*.sqlite
+*.sqlite3
+*.db
+uploads/
+
+# Loop local-only files
+handoff-archive/*.tmp
+.loop/*.local.md

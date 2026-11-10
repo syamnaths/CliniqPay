@@ -1,0 +1,52 @@
+{
+  "name": "Kerala Bus Pass",
+  "audience": "daily commuters in Kochi who renew a monthly bus pass",
+  "outcome": "an Android app where a commuter sees their pass, renews it before it expires and shows it to the conductor even without internet",
+  "platforms": [
+    "android"
+  ],
+  "stack": "Kotlin + Jetpack Compose",
+  "testCommand": "./gradlew test",
+  "languages": [
+    "en",
+    "ml"
+  ],
+  "constraints": [
+    "Pass must show offline",
+    "Works on Android 8 and later"
+  ],
+  "mustNot": [
+    "No payment card details stored in the app"
+  ],
+  "features": [
+    {
+      "title": "Show my pass",
+      "steps": [
+        "Open the app",
+        "See the pass with expiry date",
+        "Show the QR to the conductor"
+      ],
+      "failure": "No saved pass: show how to add one.",
+      "acceptance": "The pass opens in under 2 seconds with flight mode on."
+    },
+    {
+      "title": "Renew pass",
+      "steps": [
+        "Get a reminder 3 days before expiry",
+        "Choose the route and month",
+        "Pay through the official gateway",
+        "See the new pass"
+      ],
+      "failure": "Payment fails: keep the old pass and show a calm retry message."
+    },
+    {
+      "title": "Route list",
+      "steps": [
+        "Search a stop",
+        "See routes through it",
+        "Save a favourite route"
+      ],
+      "release": 2
+    }
+  ]
+}

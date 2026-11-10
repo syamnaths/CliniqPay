@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "catalogAsOf": "2026-09-09",
+  "selectionNotes": "Current Codex guidance: Luna is fast/economical for focused repetitive work, Terra is balanced for everyday work, Sol is the balanced workhorse for implementation/research, and Astra is reserved for especially demanding coding, research, analysis, and complex problem solving.",
+  "codexMinimumVersion": "0.148.0",
+  "routes": {
+    "simple": {
+      "model": "gpt-5.6-luna",
+      "effort": "low",
+      "fallbacks": [
+        { "model": "gpt-5.6-terra", "effort": "low" }
+      ]
+    },
+    "focused": {
+      "model": "gpt-5.6-luna",
+      "effort": "low",
+      "fallbacks": [
+        { "model": "gpt-5.6-terra", "effort": "low" }
+      ]
+    },
+    "standard": {
+      "model": "gpt-5.6-terra",
+      "effort": "medium",
+      "fallbacks": [
+        { "model": "gpt-5.6-sol", "effort": "medium" }
+      ]
+    },
+    "reasoning": {
+      "model": "gpt-5.6-sol",
+      "effort": "high",
+      "fallbacks": [
+        { "model": "gpt-6-astra", "effort": "medium" }
+      ]
+    },
+    "high-risk": {
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "fallbacks": [
+        { "model": "gpt-5.6-sol", "effort": "xhigh" }
+      ]
+    },
+    "large-context": {
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "fallbacks": [
+        { "model": "gpt-5.6-sol", "effort": "high" }
+      ]
+    },
+    "browser": {
+      "model": "gpt-5.6-terra",
+      "effort": "medium",
+      "fallbacks": [
+        { "model": "gpt-5.6-sol", "effort": "medium" }
+      ]
+    }
+  }
+}

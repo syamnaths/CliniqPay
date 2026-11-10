@@ -1,0 +1,402 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ hospital.name }} — Support & Helpdesk</title>
+  <link rel="icon" type="image/png" href="{% static 'images/original-icon-mark.png' %}"/>
+  <script src="{% static 'vendor/tailwind.min.js' %}"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  {% include 'includes/theme_head.html' %}
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-['Inter'] min-h-screen transition-colors">
+  <!-- Top Workspace Nav -->
+  <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-sm transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 sm:py-0 sm:h-16 flex flex-wrap items-center justify-between gap-y-2">
+      <div class="flex items-center gap-3 sm:gap-4">
+        <!-- Hospital Brand Logo & System Link -->
+        <a href="{% url 'setup_hospital:dashboard' hospital.slug %}" class="flex items-center gap-2.5">
+          {% if hospital.logo %}
+          <div class="w-9 h-9 sm:w-10 sm:h-10 p-1 bg-white dark:bg-white/10 dark:backdrop-blur-xs rounded-xl border border-slate-200 dark:border-slate-700/80 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+            <img src="{{ hospital.logo.url }}" alt="{{ hospital.name }} Logo" class="w-full h-full rounded-lg object-contain">
+          </div>
+          {% else %}
+          <img src="{% static 'images/original-icon-mark.png' %}" alt="Cliniqpay Logo" class="h-8 w-auto object-contain sm:hidden"/>
+          <img src="{% static 'images/original-staked.png' %}" alt="Cliniqpay Logo" class="hidden sm:inline-block h-10 w-auto object-contain"/>
+          {% endif %}
+        </a>
+        <div class="h-6 w-px bg-slate-200 dark:bg-slate-800"></div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white font-['Plus_Jakarta_Sans'] leading-tight">{{ hospital.name }}</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+              Helpdesk & Support
+            </span>
+          </div>
+          <span class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 block leading-none mt-0.5">Direct line to CliniqPay platform engineering & assistance</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+        {% include 'includes/theme_toggle_btn.html' %}
+        <a href="{% url 'billing:counter' hospital.slug %}" class="px-2.5 sm:px-3 py-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 text-[11px] sm:text-xs font-semibold flex items-center gap-1 transition">
+          <span class="material-symbols-outlined text-[15px] sm:text-[16px]">point_of_sale</span>
+          <span>Cashier Counter</span>
+        </a>
+        <a href="{% url 'setup_hospital:dashboard' hospital.slug %}" class="px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1">
+          <span class="material-symbols-outlined text-[15px] sm:text-[16px]">tune</span>
+          <span class="hidden sm:inline">Settings</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+      <div>
+        <h1 class="text-2xl font-bold font-['Plus_Jakarta_Sans'] text-slate-900 dark:text-white flex items-center gap-2.5">
+          <span class="material-symbols-outlined text-teal-600 dark:text-teal-400 text-[28px]">support_agent</span>
+          <span>Hospital Support & Issue Resolution</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Report technical hurdles, printer issues, or payment discrepancies. Attach screenshots and voice memos for instant triage.
+        </p>
+      </div>
+      <button type="button" onclick="openNewTicketModal()" class="px-4 py-2.5 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-md transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-[18px]">add_circle</span>
+        <span>Submit Support Request</span>
+      </button>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8">
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider block font-semibold mb-1">Total Reported</span>
+          <span class="text-2xl font-bold font-mono text-slate-900 dark:text-white">{{ tickets|length }}</span>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300">
+          <span class="material-symbols-outlined text-[24px]">inbox</span>
+        </div>
+      </div>
+
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-900 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-xs text-amber-700 dark:text-amber-400 uppercase tracking-wider block font-semibold mb-1">Active / In Progress</span>
+          <span class="text-2xl font-bold font-mono text-amber-700 dark:text-amber-400">{{ open_count }}</span>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950 flex items-center justify-center text-amber-600 dark:text-amber-400">
+          <span class="material-symbols-outlined text-[24px]">pending_actions</span>
+        </div>
+      </div>
+
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-900 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-xs text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block font-semibold mb-1">Resolved & Closed</span>
+          <span class="text-2xl font-bold font-mono text-emerald-700 dark:text-emerald-400">{{ resolved_count }}</span>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+          <span class="material-symbols-outlined text-[24px]">task_alt</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tickets List -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+      <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-teal-600 text-[18px]">receipt_long</span>
+          <span>Support Tickets & History</span>
+        </h2>
+        <span class="text-xs text-slate-400">Click any ticket to view updates or reply</span>
+      </div>
+
+      <div class="divide-y divide-slate-100 dark:divide-slate-700">
+        {% for t in tickets %}
+        <a href="{% url 'setup_hospital:ticket_detail' hospital.slug t.ticket_number %}" class="p-4 sm:p-5 hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 block">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2.5 flex-wrap mb-1">
+              <span class="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
+                #{{ t.ticket_number }}
+              </span>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white truncate">
+                {{ t.subject }}
+              </h3>
+              <!-- Priority badge -->
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
+                {% if t.priority == 'urgent' %}bg-rose-100 text-rose-800 border border-rose-200
+                {% elif t.priority == 'high' %}bg-amber-100 text-amber-800 border border-amber-200
+                {% else %}bg-slate-100 text-slate-700 border border-slate-200{% endif %}">
+                {{ t.get_priority_display }}
+              </span>
+              <!-- Status badge -->
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider
+                {% if t.status == 'open' %}bg-sky-100 text-sky-800 border border-sky-200
+                {% elif t.status == 'in_progress' %}bg-amber-100 text-amber-800 border border-amber-200
+                {% elif t.status == 'waiting_hospital' %}bg-purple-100 text-purple-800 border border-purple-200
+                {% elif t.status == 'resolved' %}bg-emerald-100 text-emerald-800 border border-emerald-200
+                {% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">
+                <span class="w-1.5 h-1.5 rounded-full {% if t.status == 'resolved' %}bg-emerald-500{% elif t.status == 'in_progress' %}bg-amber-500{% else %}bg-sky-500{% endif %}"></span>
+                {{ t.get_status_display }}
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mb-1">
+              {{ t.description }}
+            </p>
+            <div class="flex items-center gap-3 text-[11px] text-slate-400 font-medium">
+              <span>Category: <strong>{{ t.get_category_display }}</strong></span>
+              <span>·</span>
+              <span>By: {{ t.staff_name }}</span>
+              <span>·</span>
+              <span>{{ t.created_at|date:"d M Y, h:i A" }}</span>
+              {% if t.screenshot or t.audio_recording %}
+              <span>·</span>
+              <span class="text-teal-600 font-semibold flex items-center gap-0.5">
+                <span class="material-symbols-outlined text-[13px]">attach_file</span>
+                Media Attached
+              </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 self-end sm:self-center shrink-0">
+            <span class="text-xs font-semibold text-teal-700 dark:text-teal-400 flex items-center gap-0.5">
+              <span>View Conversation</span>
+              <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </span>
+          </div>
+        </a>
+        {% empty %}
+        <div class="py-16 text-center text-slate-400">
+          <span class="material-symbols-outlined text-[48px] text-slate-300 dark:text-slate-600 mb-2">support_agent</span>
+          <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">No support tickets reported yet</p>
+          <p class="text-xs text-slate-400 mt-1">If your cashiers or doctors experience any friction, submit a ticket above.</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </main>
+
+  <!-- Submit Support Request Modal -->
+  <div id="newTicketModal" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[92vh]">
+      <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center font-bold text-sm shadow-2xs">
+            <span class="material-symbols-outlined text-[20px]">send_time_extension</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white font-['Plus_Jakarta_Sans']">Report Issue / Request Support</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Captures error details, screenshots, and voice recordings</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeNewTicketModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <form id="supportTicketForm" action="{% url 'setup_hospital:support' hospital.slug %}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto">
+        {% csrf_token %}
+        <input type="hidden" name="client_page_url" id="supportClientPageUrl" value="">
+        <input type="hidden" name="browser_env_info" id="supportBrowserEnvInfo" value="">
+        <input type="hidden" name="audio_data_base64" id="supportAudioDataBase64" value="">
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Issue Subject / Summary *</label>
+          <input type="text" name="subject" required placeholder="e.g. UPI QR not displaying or Printer cutting off receipt" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <label class="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Category</label>
+            <div class="relative">
+              <select name="category" class="w-full appearance-none px-3 py-2 pr-7 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500">
+                <option value="billing_pos">Quick Billing & POS</option>
+                <option value="payments_upi">UPI & Payments</option>
+                <option value="ipd_beds">Inpatient (IPD) & Bed Turnover</option>
+                <option value="receipts_printer">Receipts & Printer</option>
+                <option value="staff_access">Staff Accounts & Logins</option>
+                <option value="other">General / Other</option>
+              </select>
+              <span class="material-symbols-outlined absolute right-2 top-2 text-[16px] text-slate-400 pointer-events-none">expand_more</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Priority Level</label>
+            <div class="relative">
+              <select name="priority" class="w-full appearance-none px-3 py-2 pr-7 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500 font-semibold text-amber-700 dark:text-amber-400">
+                <option value="medium">Medium / Standard Issue</option>
+                <option value="urgent">Urgent / Counter Halted!</option>
+                <option value="high">High / Operational Impact</option>
+                <option value="low">Low / General Inquiry</option>
+              </select>
+              <span class="material-symbols-outlined absolute right-2 top-2 text-[16px] text-slate-400 pointer-events-none">expand_more</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Detailed Explanation of the Problem *</label>
+          <textarea name="description" rows="3" required placeholder="What happened? What were you trying to do, and what error or behavior appeared?" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+        </div>
+
+        <!-- Voice Memo Audio Recorder -->
+        <div class="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-rose-500 text-[18px]">mic</span>
+              <span>Record Voice Explanation (Optional)</span>
+            </span>
+            <span id="recordingStatusBadge" class="hidden text-[10px] font-bold text-rose-600 animate-pulse flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+              Recording... (<span id="recordTimer">00:00</span>)
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button type="button" id="startRecordBtn" onclick="toggleAudioRecording()" class="px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-100 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-slate-700 dark:text-slate-200 transition">
+              <span class="material-symbols-outlined text-rose-500 text-[16px]">fiber_manual_record</span>
+              <span id="recordBtnText">Record Voice Note</span>
+            </button>
+            <audio id="audioPreviewPlayer" controls class="hidden flex-1 h-8"></audio>
+            <button type="button" id="clearAudioBtn" onclick="clearRecordedAudio()" class="hidden text-slate-400 hover:text-rose-600 p-1" title="Discard Voice Note">
+              <span class="material-symbols-outlined text-[18px]">delete</span>
+            </button>
+          </div>
+          <p class="text-[10px] text-slate-400">Speak directly into your microphone to describe what happened without typing.</p>
+        </div>
+
+        <!-- Screenshot Attachment -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Attach Screenshot / Error Photo (Optional)</label>
+          <input type="file" name="screenshot" accept="image/*,.pdf" class="block w-full text-xs text-slate-500 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 transition cursor-pointer">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <label class="block text-slate-600 dark:text-slate-300 font-semibold mb-1">WhatsApp Callback Phone</label>
+            <input type="text" name="contact_phone" value="{{ request.user.hospital_staff.raw_password|default:hospital.enrollment.contact_phone }}" placeholder="e.g. 9876543210" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-mono">
+          </div>
+          <div>
+            <label class="block text-slate-600 dark:text-slate-300 font-semibold mb-1">Contact Email</label>
+            <input type="email" name="contact_email" value="{{ request.user.email|default:hospital.enrollment.contact_email }}" placeholder="staff@hospital.in" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-mono">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" onclick="closeNewTicketModal()" class="px-4 py-2 text-slate-500 text-xs font-medium">Cancel</button>
+          <button type="submit" class="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px]">send</span>
+            <span>Submit Ticket</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openNewTicketModal() {
+      // Auto-populate diagnostic client environment
+      document.getElementById('supportClientPageUrl').value = window.location.href;
+      document.getElementById('supportBrowserEnvInfo').value = `UserAgent: ${navigator.userAgent} | Screen: ${window.screen.width}x${window.screen.height} | Platform: ${navigator.platform}`;
+      document.getElementById('newTicketModal').classList.remove('hidden');
+      document.getElementById('newTicketModal').classList.add('flex');
+    }
+
+    function closeNewTicketModal() {
+      document.getElementById('newTicketModal').classList.add('hidden');
+      document.getElementById('newTicketModal').classList.remove('flex');
+    }
+
+    // Native Browser Audio Recorder using MediaRecorder API
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let timerInterval = null;
+    let secondsElapsed = 0;
+
+    function toggleAudioRecording() {
+      if (!isRecording) {
+        startRecording();
+      } else {
+        stopRecording();
+      }
+    }
+
+    function startRecording() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Audio recording is not supported on your browser.");
+        return;
+      }
+
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+          };
+
+          mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const player = document.getElementById('audioPreviewPlayer');
+            player.src = audioUrl;
+            player.classList.remove('hidden');
+            document.getElementById('clearAudioBtn').classList.remove('hidden');
+
+            // Encode to base64 for reliable form submission
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = () => {
+              document.getElementById('supportAudioDataBase64').value = reader.result;
+            };
+
+            // Stop audio tracks
+            stream.getTracks().forEach(track => track.stop());
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          document.getElementById('recordingStatusBadge').classList.remove('hidden');
+          document.getElementById('recordBtnText').innerText = 'Stop Recording';
+
+          secondsElapsed = 0;
+          timerInterval = setInterval(() => {
+            secondsElapsed++;
+            const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+            const secs = String(secondsElapsed % 60).padStart(2, '0');
+            document.getElementById('recordTimer').innerText = `${mins}:${secs}`;
+          }, 1000);
+        })
+        .catch(err => {
+          alert("Could not access microphone. Please grant permission.");
+        });
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        isRecording = false;
+        clearInterval(timerInterval);
+        document.getElementById('recordingStatusBadge').classList.add('hidden');
+        document.getElementById('recordBtnText').innerText = 'Record Again';
+      }
+    }
+
+    function clearRecordedAudio() {
+      audioChunks = [];
+      document.getElementById('supportAudioDataBase64').value = '';
+      const player = document.getElementById('audioPreviewPlayer');
+      player.src = '';
+      player.classList.add('hidden');
+      document.getElementById('clearAudioBtn').classList.add('hidden');
+      document.getElementById('recordBtnText').innerText = 'Record Voice Note';
+    }
+  </script>
+</body>
+</html>

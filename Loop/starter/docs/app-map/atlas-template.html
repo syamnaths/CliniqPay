@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Project Flow Atlas</title>
+<style>
+:root{color-scheme:dark;--bg:#11121b;--panel:#1a1c29;--ink:#f0eee9;--muted:#b5b4c3;--line:#41445a;--accent:#dac18e;--node:#242637;--selected:#414052;--blue:#b1c8ef;--focus:#f3d390;font:15px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}button,select{font:inherit}button,a,select{-webkit-tap-highlight-color:transparent}a{color:var(--blue)}button{cursor:pointer}button:focus-visible,a:focus-visible,select:focus-visible{outline:3px solid var(--focus);outline-offset:3px}button{border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);padding:8px 12px}button:hover{background:var(--selected)}header{padding:26px 30px 21px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;align-items:center}.eyebrow{text-transform:uppercase;letter-spacing:.18em;color:var(--accent);font-size:11px;font-weight:600}h1{font-size:27px;line-height:1.2;margin:7px 0;font-weight:500}header p{color:var(--muted);font-size:13px;margin:0}.actions{display:flex;gap:8px;flex-wrap:wrap}.shell{display:grid;grid-template-columns:242px minmax(0,1fr);min-height:calc(100vh - 128px)}nav{padding:22px 16px;border-right:1px solid var(--line)}nav h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:22px 10px 9px}nav h2:first-child{margin-top:0}nav button{display:block;text-align:left;width:100%;border:0;background:transparent;padding:9px 11px;font-size:13px;margin:2px 0}nav button[aria-current="page"]{background:var(--selected);color:var(--accent)}main{padding:26px 28px 60px;min-width:0;max-width:1700px}h2{font-size:25px;font-weight:500;margin:0 0 5px}.subtitle{color:var(--muted);margin:0 0 17px;max-width:850px}.meta{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:18px}.meta span:first-child{color:var(--accent)}.content{display:grid;grid-template-columns:minmax(0,1fr) 265px;gap:22px;align-items:start}.graph-wrap{overflow-x:auto;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:15px 0;background:radial-gradient(ellipse at 50% 10%,#27243555,transparent 70%)}#graph{display:block;min-width:600px;width:100%}.side{padding:16px 0}.side h3{font-size:16px;font-weight:500;margin:6px 0 10px}.side p{margin:0 0 15px;color:var(--muted);font-size:14px}.badge{color:var(--accent);font-size:11px;letter-spacing:.13em;text-transform:uppercase}.route-list{list-style:none;padding:0;margin:10px 0 24px}.route-list li{margin:7px 0;font-size:13px}.route-list button{padding:4px 7px;font-size:12px;background:transparent}.source{display:block;font-family:ui-monospace,monospace;font-size:12px;margin:5px 0;overflow-wrap:anywhere}.notes{padding:20px 0 3px}.notes h3,.connections h3{font-size:15px;font-weight:500;margin:0 0 10px}.notes p{color:var(--muted);max-width:1050px;font-size:14px;margin:8px 0}.connections{margin-top:24px}.connections summary{cursor:pointer;color:var(--accent)}table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}td,th{text-align:left;border-bottom:1px solid var(--line);padding:9px 10px;vertical-align:top}th{color:var(--muted);font-weight:500}td:first-child{color:var(--accent);width:45px}footer{color:var(--muted);font-size:12px;margin-top:30px;border-top:1px solid var(--line);padding-top:15px}.mobile-nav{display:none}.edge{fill:none;stroke:var(--line);stroke-width:1.6}.edge.active{stroke:var(--accent);stroke-width:2.6}.edge.inactive{opacity:.22}.edge-number rect{fill:var(--bg);stroke:var(--line)}.edge-number text{fill:var(--muted);font:11px system-ui}.node rect{fill:var(--node);stroke:var(--line);stroke-width:1}.node text{fill:var(--ink);font:13px system-ui}.node .node-index{fill:var(--accent);font:10px ui-monospace,monospace}.node{cursor:pointer}.node.active rect{fill:var(--selected);stroke:var(--accent);stroke-width:2}.node:focus{outline:none}.node:focus-visible rect{stroke:var(--focus);stroke-width:3}.node.related rect{stroke:var(--blue)}#print-area{display:none}.hint{font-size:12px;color:var(--muted);margin:8px 0}.source-note{font-size:12px;color:var(--muted)}
+@media(min-width:1600px){.content{grid-template-columns:minmax(0,1fr) 310px}}
+@media(max-width:1120px){.content{grid-template-columns:minmax(0,1fr)}.side{display:grid;grid-template-columns:1fr 1fr;gap:24px}.shell{grid-template-columns:210px minmax(0,1fr)}main{padding:22px 20px}nav{padding:18px 9px}}
+@media(max-width:760px){header{padding:20px;display:block}h1{font-size:24px}.actions{margin-top:15px}.shell{display:block}nav{display:none}main{padding:20px 16px}.mobile-nav{display:block;margin-bottom:20px}.mobile-nav select{width:100%;padding:10px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:7px}.side{display:block}h2{font-size:23px}.graph-wrap{margin:0 -4px}.connections{overflow-x:auto}}
+@media print{ :root{color-scheme:light;--bg:#fff;--panel:#fff;--ink:#151520;--muted:#454557;--line:#b3b3c0;--accent:#735016;--node:#f3f2f7;--selected:#ede4d7;--blue:#224e87}body{background:white}header,.shell{display:none}#print-area{display:block}.print-page{break-before:page;padding:12px}.print-page:first-child{break-before:auto}.print-page svg{width:100%;max-height:760px}.print-page h2{font-size:21px}.print-page p,.print-page li{font-size:11px}.print-page table{font-size:10px}.print-page .node text{font-size:13px}.print-page .graph-wrap{background:transparent}a{color:#224e87;text-decoration:none}@page{size:A4;margin:12mm}}
+.status-chip[data-status=planned]{color:#f3d390}.status-chip[data-status=building]{color:#b1c8ef}.status-chip[data-status=delivered]{color:#9fe0b0}
+.priority-board{border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:28px;background:var(--panel)}.priority-board h2{font-size:21px}.priority-board p{color:var(--muted)}.priority-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.priority-cell{border:1px solid var(--line);padding:14px;border-radius:8px;min-width:0}.priority-cell h3{font-size:15px;margin:0 0 8px;color:var(--accent)}.priority-board button{display:block;text-align:left;width:100%;margin:7px 0;overflow-wrap:anywhere}.priority-board ol{padding-left:24px}.priority-board li{margin:8px 0}.focus-line{font-size:18px;color:var(--ink)!important}@media(max-width:600px){.priority-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div><div class="eyebrow">Project anatomy / source baseline</div><h1><span id="atlas-name">Project</span> <span style="color:var(--accent)">Flow Atlas</span></h1><p id="baseline"></p></div><div class="actions"><button id="export-svg" type="button">Save diagram SVG</button><button id="print-all" type="button">Print / Save all as PDF</button><a href="FLOW-REFERENCE.md">Reference</a><a href="CONTROL-INVENTORY.md">Controls</a><a href="FIX-QUEUE.md">Fix queue</a></div></header>
+<div class="shell"><nav id="navigation" aria-label="Flow maps"></nav><main>
+<section class="priority-board" aria-labelledby="priorities-title"><div class="eyebrow">Delivery priorities · one active big rock</div><h2 id="priorities-title">Focus before starting more</h2><p id="priority-focus" class="focus-line"></p><p id="priority-warning" role="status"></p><details open><summary>Build order · ready and blocked</summary><ol id="priority-queue"></ol></details><h3>Urgency × importance</h3><p>Big rocks are end-to-end outcomes. Small rocks support them. This matrix helps triage; the agreed build order controls execution.</p><div class="priority-grid"><section class="priority-cell"><h3>Important + urgent · triage now</h3><div id="matrix-now"></div></section><section class="priority-cell"><h3>Important + not urgent · protect focus</h3><div id="matrix-focus"></div></section><section class="priority-cell"><h3>Not important + urgent · timebox / delegate</h3><div id="matrix-timebox"></div></section><section class="priority-cell"><h3>Neither · defer for review</h3><div id="matrix-defer"></div></section></div><details><summary>Unclassified · needs triage</summary><div id="matrix-unclassified"></div></details><p>Priority changes belong in atlas-data.mjs. No measured speed improvement yet.</p></section>
+<div class="mobile-nav"><label for="map-select">Choose a flow</label><select id="map-select"></select></div>
+<div class="eyebrow" id="group"></div><h2 id="title"></h2><p class="subtitle" id="subtitle"></p><div class="meta"><span id="map-status" class="status-chip">Source-reviewed · runtime not verified</span><span id="size"></span><span id="position"></span></div>
+<div class="content"><div><div class="graph-wrap"><svg id="graph" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Flow diagram"></svg></div><p class="hint">Select a step for its behavior and connections. Numbered arrows match the connection list. Scroll the diagram sideways on a small screen.</p></div><aside class="side" aria-label="Selected step"><div><div class="badge">Selected step</div><h3 id="node-title"></h3><p id="node-detail" aria-live="polite"></p><div id="node-routes"></div></div><div><div class="badge">Source references</div><div id="sources"></div><p class="source-note">References point to the inspected source snapshot; later edits may shift line numbers.</p><button id="clear-selection" type="button">Show all connections</button></div></aside></div>
+<section class="notes"><h3>Behavior to keep in view</h3><div id="notes"></div></section>
+<details class="connections"><summary id="connection-summary">All connections</summary><table><thead><tr><th>#</th><th>From</th><th>Condition / action</th><th>To</th></tr></thead><tbody id="connection-rows"></tbody></table></details>
+<footer id="scope"></footer>
+</main></div><div id="print-area"></div>
+<script>
+/* ATLAS_DATA */
+(() => {
+ const $ = id => document.getElementById(id);
+ if (typeof atlas === 'undefined') {
+  $('group').textContent='Atlas source template';
+  $('title').textContent='Open the generated flow atlas';
+  $('subtitle').textContent='This template contains no embedded map data until the atlas build runs.';
+  $('size').textContent='Template only';
+  $('position').textContent='No runtime map loaded';
+  $('node-title').textContent='Generated atlas required';
+  $('node-detail').textContent='Use docs/app-map/index.html for the complete interactive flow atlas.';
+  const link=document.createElement('a');link.href='./index.html';link.textContent='Open generated atlas';$('node-routes').append(link);
+  $('scope').textContent='The template is a build input. Opening it directly no longer runs the atlas application.';
+  return;
+ }
+ const ns = 'http://www.w3.org/2000/svg';
+ let current, selected = null;
+ const drilldowns=Object.assign({},atlas.meta.drilldowns||{},Object.fromEntries(atlas.graphs.filter(g=>g.drilldowns).map(g=>[g.id,g.drilldowns])));
+ const esc = s => String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+ const make = (tag,attrs={},text) => { const el=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);if(text!==undefined)el.textContent=text;return el; };
+ const wrap = (value,max=23) => {const lines=[];let line='';for(const word of value.split(' ')){if((line+' '+word).trim().length>max&&line){lines.push(line);line=word;}else line=(line+' '+word).trim();}if(line)lines.push(line);return lines;};
+ function draw(graph,svg,interactive=true){
+  svg.replaceChildren();const width=760,rowHeight=128,nodeWidth=190,nodeHeight=78,margin=48;
+  const height=graph.rows.length*rowHeight+12;svg.setAttribute('viewBox',`0 0 ${width} ${height}`);svg.setAttribute('aria-label',graph.title+'; select a step to inspect');
+  svg.append(make('title',{},graph.title));svg.append(make('desc',{},graph.subtitle));
+  const defs=make('defs');const marker=make('marker',{id:'arrow-'+graph.id,viewBox:'0 0 10 10',refX:8,refY:5,markerWidth:6,markerHeight:6,orient:'auto-start-reverse'});marker.append(make('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:'context-stroke'}));defs.append(marker);svg.append(defs);
+  const positions={};let number=0;
+  graph.rows.forEach((row,r)=>row.forEach((node,c)=>{positions[node[0]]={x:margin+(width-margin*2)*(c+.5)/row.length-nodeWidth/2,y:r*rowHeight+16,row:r,index:++number,node};}));
+  const edgeLayer=make('g');svg.append(edgeLayer);
+  graph.edges.forEach(([from,to,label],i)=>{const a=positions[from],b=positions[to];let x1=a.x+nodeWidth/2,y1=a.y+nodeHeight,x2=b.x+nodeWidth/2,y2=b.y;let d,lx,ly;
+    if(from===to){const x=a.x+nodeWidth,y=a.y+nodeHeight/2;d=`M ${x} ${y+12} C ${x+35} ${y+52},${x+35} ${y-52},${x} ${y-12}`;lx=x+26;ly=y;}
+    else if(b.row===a.row){const right=b.x>a.x;const sx=right?a.x+nodeWidth:a.x,tx=right?b.x:b.x+nodeWidth;const yy=a.y+nodeHeight/2+(right?-9:9);d=`M ${sx} ${yy} L ${tx} ${yy}`;lx=(sx+tx)/2;ly=yy;}
+    else if(b.row===a.row+1){const mid=(y1+y2)/2;d=`M ${x1} ${y1} C ${x1} ${mid},${x2} ${mid},${x2} ${y2}`;lx=(x1+x2)/2;ly=mid;}
+    else {const left=(i%2===0);const outer=left?14+(i%4)*6:width-14-(i%4)*6;const sy=y1+12,ty=y2-12;d=`M ${x1} ${y1} L ${x1} ${sy} L ${outer} ${sy} L ${outer} ${ty} L ${x2} ${ty} L ${x2} ${y2}`;lx=outer;ly=(sy+ty)/2;}
+    const path=make('path',{d,class:'edge','marker-end':`url(#arrow-${graph.id})`,'data-from':from,'data-to':to});path.append(make('title',{},`${i+1}. ${a.node[1]} → ${b.node[1]}: ${label}`));edgeLayer.append(path);
+    const caption=make('g',{class:'edge-number','pointer-events':'none'});caption.append(make('rect',{x:lx-10,y:ly-8,width:20,height:16,rx:5}));caption.append(make('text',{x:lx,y:ly+4,'text-anchor':'middle'},String(i+1)));edgeLayer.append(caption);
+  });
+  for(const [id,p] of Object.entries(positions)){
+    const g=make('g',{class:'node','data-node':id,transform:`translate(${p.x},${p.y})`});
+    if(interactive){g.setAttribute('role','button');g.setAttribute('tabindex','0');g.setAttribute('aria-label',p.node[1]+'. '+p.node[2]);g.addEventListener('click',()=>selectNode(id));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectNode(id);}});}
+    g.append(make('rect',{width:nodeWidth,height:nodeHeight,rx:10}));g.append(make('text',{x:12,y:16,class:'node-index'},String(p.index).padStart(2,'0')));
+    const lines=wrap(p.node[1]);lines.forEach((line,j)=>g.append(make('text',{x:nodeWidth/2,y:33+j*17,'text-anchor':'middle'},line)));
+    g.append(make('title',{},p.node[2]));svg.append(g);
+  }
+ }
+ function selectNode(id){
+  selected=id;const nodes=current.rows.flat();const n=nodes.find(n=>n[0]===id);if(!n)return;
+  $('node-title').textContent=n[1];$('node-detail').textContent=n[2];
+  const links=current.edges.map((e,i)=>({e,i})).filter(({e})=>e[0]===id||e[1]===id);const related=new Set(links.flatMap(({e})=>e.slice(0,2)));
+  $('graph').querySelectorAll('.node').forEach(el=>{el.classList.toggle('active',el.dataset.node===id);el.classList.toggle('related',el.dataset.node!==id&&related.has(el.dataset.node));el.setAttribute('aria-pressed',String(el.dataset.node===id));});
+  $('graph').querySelectorAll('.edge').forEach(el=>{const on=el.dataset.from===id||el.dataset.to===id;el.classList.toggle('active',on);el.classList.toggle('inactive',!on);});
+  const ul=document.createElement('ul');ul.className='route-list';
+  for(const {e,i} of links){const li=document.createElement('li');const other=e[0]===id?e[1]:e[0];const btn=document.createElement('button');btn.type='button';btn.textContent=nodes.find(n=>n[0]===other)[1];btn.onclick=()=>selectNode(other);li.append(document.createTextNode(`${i+1} · ${e[0]===id?'→':'←'} ${e[2]} · `),btn);ul.append(li);} $('node-routes').replaceChildren(ul);
+  const detailMap=drilldowns[current.id]?.[id];if(detailMap){const button=document.createElement('button');button.type='button';button.textContent='Open detailed map →';button.onclick=()=>navigate(detailMap);$('node-routes').append(button);}
+ }
+ function clearSelection(){selected=null;$('node-title').textContent=current.title;$('node-detail').textContent='Select any step to see its behavior, incoming paths and possible next steps.';$('node-routes').replaceChildren();$('graph').querySelectorAll('.node,.edge').forEach(el=>{el.classList.remove('active','inactive','related');if(el.classList.contains('node'))el.setAttribute('aria-pressed','false');});}
+ function navigate(id){
+  current=atlas.graphs.find(g=>g.id===id)||atlas.graphs[0];selected=null;
+  $('group').textContent=current.group;$('title').textContent=current.title;$('subtitle').textContent=current.subtitle;$('size').textContent=current.rows.flat().length+' steps · '+current.edges.length+' connections';$('position').textContent=`Map ${atlas.graphs.indexOf(current)+1} / ${atlas.graphs.length}`;
+  $('navigation').querySelectorAll('button').forEach(b=>{if(b.dataset.map===current.id)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});$('map-select').value=current.id;
+  $('sources').innerHTML=(current.source?current.source.split('; ').map(ref=>{const [file,line]=ref.split(':');return `<a class="source" href="../../${esc(file)}#L${line}">${esc(ref)}</a>`;}).join(''):'<span class="source">No source yet (planned)</span>');
+  const status=current.status||'delivered';const chip=$('map-status');chip.dataset.status=status;chip.textContent=({planned:'Planned · not built yet',building:'Building · partly delivered',delivered:'Delivered · source-reviewed'})[status]||status;
+  $('notes').innerHTML=current.notes.map(n=>'<p>'+esc(n)+'</p>').join('');
+  const names=Object.fromEntries(current.rows.flat().map(n=>[n[0],n[1]]));$('connection-rows').innerHTML=current.edges.map(([a,b,l],i)=>`<tr><td>${i+1}</td><td>${esc(names[a])}</td><td>${esc(l)}</td><td>${esc(names[b])}</td></tr>`).join('');$('connection-summary').textContent=`All ${current.edges.length} connections`;
+  draw(current,$('graph'));clearSelection();history.replaceState(null,'','#'+current.id);const scroller=$('graph').parentElement;scroller.scrollLeft=Math.max(0,(scroller.scrollWidth-scroller.clientWidth)/2);
+ }
+ const plan=atlas.priorities;
+ if(plan){
+  const next=plan.queue.find(g=>g.id===plan.next);
+  $('priority-focus').textContent=next?'Next focus: '+next.title:(plan.issues.length?'Invalid plan · resolve the reported conflicts':plan.active.length?'Active map blocked · checkpoint before switching':plan.queue.length?'No ready map · resolve blockers':'All delivery maps delivered');
+  $('priority-warning').textContent=[...plan.warnings,...plan.issues].join(' ');
+  const cells=['now','focus','timebox','defer','unclassified'];
+  for(const item of plan.queue){
+   const p=item.priority;
+   const label=p?(p.rock==='big'?'Big rock':'Small rock'):'Unclassified';
+   const li=document.createElement('li');
+   const button=document.createElement('button');button.type='button';button.textContent=item.title+' · '+label+' · '+(item.blockers.length?'Blocked: '+item.blockers.join('; '):item.status==='building'?'Building':'Ready');button.onclick=()=>navigate(item.id);li.append(button);$('priority-queue').append(li);
+   const cell=!p?'unclassified':p.important?(p.urgent?'now':'focus'):(p.urgent?'timebox':'defer');
+   const card=document.createElement('button');card.type='button';card.textContent=item.title+' · '+label+(p?' — '+p.reason:'');card.onclick=()=>navigate(item.id);$('matrix-'+cell).append(card);
+  }
+  for(const cell of cells)if(!$('matrix-'+cell).children.length)$('matrix-'+cell).textContent='No pending maps';
+ }
+ let group='';for(const graph of atlas.graphs){if(graph.group!==group){group=graph.group;const h=document.createElement('h2');h.textContent=group;$('navigation').append(h);}const b=document.createElement('button');b.type='button';b.textContent=graph.title;b.dataset.map=graph.id;b.onclick=()=>navigate(graph.id);$('navigation').append(b);const opt=document.createElement('option');opt.value=graph.id;opt.textContent=graph.group+' · '+graph.title;$('map-select').append(opt);}
+ $('map-select').onchange=e=>navigate(e.target.value);$('clear-selection').onclick=clearSelection;
+ document.title=atlas.meta.title;$('atlas-name').textContent=atlas.meta.title.replace(/\s*·\s*Flow Atlas$/,'');
+ const counts=atlas.graphs.reduce((c,g)=>{const k=g.status||'delivered';c[k]=(c[k]||0)+1;return c;},{});
+ $('baseline').textContent=`${atlas.meta.date} · source ${atlas.meta.commit} · ${atlas.graphs.length} maps (${['delivered','building','planned'].filter(k=>counts[k]).map(k=>counts[k]+' '+k).join(', ')})`;$('scope').textContent=atlas.meta.scope;
+ $('export-svg').onclick=()=>{const svg=$('graph').cloneNode(true);svg.setAttribute('xmlns',ns);const style=make('style',{},'.edge{fill:none;stroke:#777b90;stroke-width:1.6}.edge.active{stroke:#9b721f;stroke-width:2.6}.edge.inactive{opacity:.3}.node rect{fill:#f4f3f8;stroke:#8b8c9d}.node.active rect{fill:#eee2c7;stroke:#9b721f}.node text{fill:#171725;font:13px system-ui}.node .node-index{fill:#77551a;font:10px monospace}.edge-number rect{fill:white;stroke:#a4a4b2}.edge-number text{fill:#48485b;font:11px system-ui}');svg.prepend(style);svg.style.background='white';const blob=new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=(atlas.meta.slug||'atlas')+'-'+current.id+'.svg';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+ $('print-all').onclick=()=>{const area=$('print-area');area.replaceChildren();for(const graph of atlas.graphs){const section=document.createElement('section');section.className='print-page';section.innerHTML=`<div class="eyebrow">${esc(atlas.meta.title)} · ${esc(graph.group)}</div><h2>${esc(graph.title)}</h2><p>${esc(graph.subtitle)}</p><p>${esc(graph.source)}</p>`;const svg=make('svg',{xmlns:ns});draw(graph,svg,false);section.append(svg);for(const note of graph.notes){const p=document.createElement('p');p.textContent=note;section.append(p);}const table=document.createElement('table');table.innerHTML='<thead><tr><th>Step</th><th>Behavior</th></tr></thead><tbody>'+graph.rows.flat().map(n=>`<tr><td>${esc(n[1])}</td><td>${esc(n[2])}</td></tr>`).join('')+'</tbody>';section.append(table);const names=Object.fromEntries(graph.rows.flat().map(n=>[n[0],n[1]]));const routes=document.createElement('p');routes.textContent=graph.edges.map(([a,b,l],i)=>`${i+1}. ${names[a]} → ${names[b]} (${l})`).join(' · ');section.append(routes);area.append(section);}window.print();};
+ window.addEventListener('hashchange',()=>navigate(location.hash.slice(1)));
+ navigate(location.hash.slice(1));
+ window.atlasQA={graphs:atlas.graphs,navigate,selectNode,draw};
+})();
+</script>
+</body>
+</html>

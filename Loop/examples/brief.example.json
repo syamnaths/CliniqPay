@@ -1,0 +1,16 @@
+{
+  "name": "Calm Notes",
+  "audience": "busy people who want a two-minute daily reflection",
+  "outcome": "a phone-friendly web app where a person writes one short reflection a day, sees a streak, and gets a gentle reminder",
+  "platforms": ["web"],
+  "stack": "static PWA (HTML, CSS, JavaScript), offline first",
+  "languages": ["en", "ml"],
+  "constraints": ["No account needed; data stays on the device", "Works offline after the first visit"],
+  "mustNot": ["No medical or therapy claims", "No tracking or analytics without the owner's approval"],
+  "features": [
+    { "title": "First open", "steps": ["Welcome screen", "Choose language", "Set reminder time (optional)", "Go to today"], "acceptance": "A new user reaches today's page in under 30 seconds." },
+    { "title": "Write today", "steps": ["Open today", "Write a short reflection", "Save", "See it in the list"], "failure": "Storage full: keep the text on screen and show a calm message.", "acceptance": "A reflection survives closing and reopening the app." },
+    { "title": "Streak", "steps": ["Count days in a row", "Show the streak", "Celebrate milestones gently"], "release": 1 },
+    { "title": "Daily reminder", "steps": ["Ask permission at the right moment", "Schedule the reminder", "Open today from the reminder"], "release": 2 }
+  ]
+}

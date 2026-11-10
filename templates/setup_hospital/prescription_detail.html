@@ -1,0 +1,183 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Prescription #{{ rx.rx_number }} — {{ rx.patient.name }}</title>
+  <link rel="icon" type="image/png" href="{% static 'images/original-icon-mark.png' %}"/>
+  <script src="{% static 'vendor/tailwind.min.js' %}"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
+  <style>
+    @media print {
+      body { background: white; color: black; }
+      .no-print { display: none !important; }
+      .print-shadow-none { box-shadow: none !important; border: 1px solid #e2e8f0 !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 font-['Inter'] text-slate-900 min-h-screen py-8 px-4">
+
+  <!-- Print & WhatsApp CTA Toolbar -->
+  <div class="max-w-3xl mx-auto mb-4 flex flex-wrap items-center justify-between gap-2.5 no-print">
+    <a href="{% url 'setup_hospital:doctor_portal' hospital.slug %}" class="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1">
+      <span>← Return to Clinical Desk</span>
+    </a>
+    <div class="flex items-center gap-2">
+      <form action="{% url 'setup_hospital:dispatch_prescription_whatsapp' hospital.slug rx.rx_number %}" method="POST" class="inline">
+        {% csrf_token %}
+        <input type="hidden" name="phone" value="{{ rx.patient.phone }}">
+        <button type="submit" class="px-3.5 py-2 bg-[#25D366] hover:bg-[#20bd5a] text-white font-semibold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition">
+          <span class="material-symbols-outlined text-[17px]">chat</span>
+          <span>Send via WhatsApp (+91 {{ rx.patient.phone }})</span>
+        </button>
+      </form>
+      <button onclick="window.print()" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold text-xs rounded-xl shadow-sm flex items-center gap-1.5 transition">
+        <span>Print Prescription</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages Flash -->
+  {% if messages %}
+  <div class="max-w-3xl mx-auto mb-4 space-y-2 no-print">
+    {% for message in messages %}
+    <div class="p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800">
+      <span class="material-symbols-outlined text-[18px]">check_circle</span>
+      <span>{{ message }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Medical Prescription Sheet (NABH Standard) -->
+  <div class="max-w-3xl mx-auto bg-white rounded-3xl border border-slate-200 p-8 sm:p-10 shadow-sm print-shadow-none space-y-6">
+    
+    <!-- Clinic & Doctor Header -->
+    <div class="flex items-start justify-between pb-6 border-b-2 border-slate-900 gap-4">
+      <div class="flex items-center gap-3.5">
+        {% if hospital.logo %}
+        <div class="w-14 h-14 p-1.5 bg-white rounded-2xl border border-slate-200 flex items-center justify-center shrink-0">
+          <img src="{{ hospital.logo.url }}" alt="Logo" class="w-full h-full object-contain">
+        </div>
+        {% endif %}
+        <div>
+          <h1 class="text-xl sm:text-2xl font-extrabold font-['Plus_Jakarta_Sans'] text-slate-900 leading-tight">{{ hospital.name }}</h1>
+          <p class="text-xs text-slate-500">{{ hospital.city }}, {{ hospital.state }} · Tel: +91 {{ hospital.phone|default:"8089400200" }}</p>
+        </div>
+      </div>
+      
+      <div class="text-right">
+        <h2 class="text-base font-bold text-sky-800 font-['Plus_Jakarta_Sans']">{{ rx.doctor.full_name }}</h2>
+        <p class="text-xs text-slate-600 font-medium">{{ rx.doctor.specialization }}</p>
+        {% if rx.doctor.registration_number %}
+        <p class="text-[11px] font-mono text-slate-500">Reg: {{ rx.doctor.registration_number }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Patient Demographics & Vitals Row -->
+    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+      <div>
+        <span class="text-[10px] uppercase font-bold text-slate-400 block">Patient Name</span>
+        <strong class="text-slate-900">{{ rx.patient.name }}</strong>
+      </div>
+      <div>
+        <span class="text-[10px] uppercase font-bold text-slate-400 block">Age / Gender / UHID</span>
+        <span class="text-slate-800">{{ rx.patient.age|default:"--" }} Y / {{ rx.patient.gender }} · <strong class="font-mono text-sky-700">{{ rx.patient.patient_id }}</strong></span>
+      </div>
+      <div>
+        <span class="text-[10px] uppercase font-bold text-slate-400 block">Rx Date & No.</span>
+        <span class="text-slate-800 font-mono">{{ rx.created_at|date:"d M Y" }} · <strong>#{{ rx.rx_number }}</strong></span>
+      </div>
+      <div>
+        <span class="text-[10px] uppercase font-bold text-slate-400 block">Care Type</span>
+        <span class="font-semibold {% if rx.is_inpatient %}text-purple-700{% else %}text-sky-700{% endif %}">
+          {% if rx.is_inpatient %}IPD (Bed: {{ rx.patient.room_bed_number|default:"Ward" }}){% else %}Outpatient (OPD){% endif %}
+        </span>
+      </div>
+    </div>
+
+    <!-- Clinical Vitals -->
+    {% if rx.vitals_bp or rx.vitals_pulse or rx.vitals_temp or rx.vitals_weight %}
+    <div class="flex items-center gap-4 text-xs font-mono text-slate-600 bg-sky-50/50 p-2.5 rounded-xl border border-sky-100 flex-wrap">
+      {% if rx.vitals_bp %}<span>BP: <strong class="text-slate-900">{{ rx.vitals_bp }}</strong></span>{% endif %}
+      {% if rx.vitals_pulse %}<span>Pulse: <strong class="text-slate-900">{{ rx.vitals_pulse }}</strong></span>{% endif %}
+      {% if rx.vitals_temp %}<span>Temp: <strong class="text-slate-900">{{ rx.vitals_temp }}</strong></span>{% endif %}
+      {% if rx.vitals_weight %}<span>Weight: <strong class="text-slate-900">{{ rx.vitals_weight }}</strong></span>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Diagnosis & Complaints -->
+    <div class="space-y-1 text-xs">
+      {% if rx.chief_complaints %}
+      <p class="text-slate-600"><span class="font-bold text-slate-800">Chief Complaints:</span> {{ rx.chief_complaints }}</p>
+      {% endif %}
+      <p class="text-slate-800"><span class="font-bold text-sky-800">Clinical Diagnosis:</span> <strong class="text-sm text-slate-900">{{ rx.diagnosis }}</strong></p>
+    </div>
+
+    <!-- Rx Symbol & Medications Table -->
+    {% if rx.medications.all %}
+    <div class="pt-2">
+      <div class="text-2xl font-serif font-black text-slate-900 mb-2 italic">℞</div>
+      
+      <table class="w-full text-left text-xs border-collapse">
+        <thead>
+          <tr class="border-b-2 border-slate-200 text-slate-500 uppercase text-[10px] tracking-wider">
+            <th class="py-2 font-bold">#</th>
+            <th class="py-2 font-bold">Medicine Formulation</th>
+            <th class="py-2 font-bold text-center">Dosage Frequency</th>
+            <th class="py-2 font-bold text-center">Timing</th>
+            <th class="py-2 font-bold text-center">Duration</th>
+            <th class="py-2 font-bold text-right">Dispense Qty</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for item in rx.medications.all %}
+          <tr>
+            <td class="py-3 text-slate-400 font-mono">{{ forloop.counter }}</td>
+            <td class="py-3">
+              <div class="font-bold text-slate-900">{{ item.medicine_name }}</div>
+              {% if item.notes %}<div class="text-[10px] text-slate-400 italic">{{ item.notes }}</div>{% endif %}
+            </td>
+            <td class="py-3 text-center font-mono font-semibold text-sky-800">{{ item.dosage }}</td>
+            <td class="py-3 text-center text-slate-600">{{ item.timing }}</td>
+            <td class="py-3 text-center text-slate-600">{{ item.duration }}</td>
+            <td class="py-3 text-right font-mono font-bold text-slate-900">{{ item.quantity }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+      <span class="material-symbols-outlined text-[18px]">verified</span>
+      <span class="font-semibold">No pharmaceutical medication required for this consultation. Follow clinical advice and dietary instructions below.</span>
+    </div>
+    {% endif %}
+
+    <!-- Advice / Diet / Lifestyle -->
+    {% if rx.clinical_notes %}
+    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700">
+      <span class="font-bold text-slate-900 block mb-1">Advice & Instructions:</span>
+      <p class="leading-relaxed">{{ rx.clinical_notes }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Footer Signature Line -->
+    <div class="pt-16 flex items-end justify-between text-xs">
+      <div class="text-[11px] text-slate-400">
+        <p>This is a valid computerized medical prescription issued via CliniqPay.</p>
+        <p>Pharmacy fulfillment: Ready for dispensing at hospital pharmacy counter.</p>
+      </div>
+      <div class="text-right space-y-1">
+        <div class="w-44 border-b border-slate-400 ml-auto pb-1"></div>
+        <p class="font-bold text-slate-900">{{ rx.doctor.full_name }}</p>
+        <p class="text-[11px] text-slate-500">Authorized Physician Signature</p>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
