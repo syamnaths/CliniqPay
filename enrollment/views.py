@@ -83,3 +83,15 @@ support@cliniqpay.com
 def track_status(request, token):
     enrollment = get_object_or_404(EnrollmentRequest, reference_token=token)
     return render(request, 'enrollment/status.html', {'enrollment': enrollment})
+
+def terms_of_service(request):
+    """Statutory Terms of Service & ABDM Compliance Page."""
+    return render(request, 'enrollment/legal_terms.html')
+
+def security_whitepaper(request):
+    """Enterprise Technical Security & DPDP Compliance Whitepaper."""
+    return render(request, 'enrollment/security_whitepaper.html')
+
+def system_status(request):
+    """Live Infrastructure Health & Subsystem Status Page."""
+    return render(request, 'enrollment/system_status.html')

@@ -6,7 +6,25 @@
 - **Baseline:** Django project with SQLite dev DB. Delivered maps: `workflow`, `enrollment`, `platform-admin`, `setup`, `billing`, `payment`, `summary`, `receipts`.
 - **Platform:** Web, intended for desktop and Android tablet browsers. Agreed stack: Python/Django, Django templates, Tailwind CSS v4 and PostgreSQL; Celery and Redis when background work is implemented. One shared, tenant-aware PostgreSQL database with a modular Django application.
 - **Atlas:** `docs/app-map/index.html`; source `docs/app-map/atlas-data.mjs`. 11 maps: 8 delivered, 0 building, 3 planned. Next map to build is `release` (Store & production readiness checklist).
-- **Checks:** Django unit tests for all apps passed (39/39 tests). Atlas build and contract tests passed with zero errors (`npm run atlas:check`).
+- **Checks:** Django unit tests for all apps passed (40/40 tests). Atlas build and contract tests passed with zero errors (`npm run atlas:check`).
+  - Landing Page Hero & Social Proof Enhancements:
+    1. Connected **"Start Your Free Setup"** Hero Form directly to live trial registration (`/enrollment/submit/`) with plan tier dropdown (Starter ₹1,999/mo, Standard ₹3,999/mo, Enterprise ₹6,999/mo) and automated reference token issuance.
+    2. Replaced the static side-by-side POS mockup with an interactive 3-slide **Real-World Deployment Hero Carousel** showcasing:
+       - **Slide 1 (Starter Clinic):** Arogya Daycare Clinic (Solo practice, OPD quick tokens, zero-fee dynamic UPI, WhatsApp bills).
+       - **Slide 2 (Standard Hospital):** City Care Hospital (20 beds, room turnover lifecycle Occupied/Cleaning/Available, dedicated pharmacy dispensing terminal).
+       - **Slide 3 (Enterprise Chain):** Apex Multi-Specialty Hospital (50 beds, cardiology diagnostics, department-scoped cashiering, platform triage).
+    3. Replaced "Trusted by Medical Administrators" with **"What Founders Have to Say" Interactive Carousel** featuring:
+       - **Aravind** (Forward Deployed Engineer · Co-Founder) on eliminating receptionist cashier discrepancies.
+       - **Syam** (Forward Deployed Designer · Co-Founder) on emergency-optimized typography, contrast, and cognitive load reduction.
+       - **Jithin James** (Technical Architect · Co-Founder) on sovereign zero-fee direct-to-bank settlements and ABDM longitudinal tenant isolation.
+    4. Removed the "Watch 60-Sec Demo Video" button. Atlas build and contract tests passed with zero errors (`npm run atlas:check`).
+  - Landing Page Full Interconnection & Supplementary Pages:
+    1. Audited and eliminated all 24 dead `href="#"` links across the SaaS landing page (`enrollment/templates/enrollment/landing.html`).
+    2. Wired primary header navigation and footer quick links directly to active landing sections (`#features`, `#comparison`, `#workflow`, `#roi-calculator`, `#pricing`, `#faqs`, `#enrollment-form`).
+    3. Created and routed **Statutory Terms of Service & ABDM Compliance** (`/terms/` → `legal_terms.html`).
+    4. Created and routed **Enterprise Security, Encryption & DPDP Standards Whitepaper** (`/security/` → `security_whitepaper.html`).
+    5. Created and routed **Live System Status & Infrastructure Health** (`/status/` → `system_status.html`).
+    6. Wired floating and inline "Chat with Billing Expert" CTAs directly to official WhatsApp integration. Atlas build and contract tests passed with zero errors (`npm run atlas:check`).
   - Configured project for 1-click **Render** cloud deployment:
     1. Added `render.yaml` defining web service (`gunicorn cliniqpay.wsgi:application`) and PostgreSQL database in the Singapore region (low latency to India).
     2. Added `build.sh` build script handling dependency installation, WhiteNoise static assets collection (`collectstatic`), database migrations, and automatic initial demo seeding via `python manage.py seed_demo_data`.

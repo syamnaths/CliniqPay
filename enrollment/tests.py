@@ -69,3 +69,20 @@ class HospitalEnrollmentTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Apollo Daycare')
         self.assertContains(response, 'Under Review')
+
+    def test_connected_legal_and_security_pages(self):
+        """Test newly connected Terms of Service, Security Whitepaper, and Status pages."""
+        terms_url = reverse('enrollment:terms_of_service')
+        res_terms = self.client.get(terms_url)
+        self.assertEqual(res_terms.status_code, 200)
+        self.assertContains(res_terms, "Terms of Service & ABDM Compliance")
+
+        sec_url = reverse('enrollment:security_whitepaper')
+        res_sec = self.client.get(sec_url)
+        self.assertEqual(res_sec.status_code, 200)
+        self.assertContains(res_sec, "Enterprise Security, Encryption & DPDP Standards")
+
+        status_url = reverse('enrollment:system_status')
+        res_status = self.client.get(status_url)
+        self.assertEqual(res_status.status_code, 200)
+        self.assertContains(res_status, "All CliniqPay Systems Operational")

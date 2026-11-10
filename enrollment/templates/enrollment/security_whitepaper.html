@@ -1,0 +1,90 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Architecture Whitepaper & DPDP Compliance — CliniqPay</title>
+  <link rel="icon" type="image/png" href="{% static 'images/original-icon-mark.png' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased font-['Inter']">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
+    <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5">
+        <img src="{% static 'images/logo.png' %}" alt="Cliniqpay Logo" class="h-8 w-auto object-contain">
+      </a>
+      <div class="flex items-center gap-4 text-xs font-semibold">
+        <a href="/" class="text-slate-600 hover:text-teal-700">&larr; Back to Home</a>
+        <a href="{% url 'enrollment:terms_of_service' %}" class="text-slate-600 hover:text-teal-700">Terms of Service</a>
+        <a href="{% url 'enrollment:system_status' %}" class="text-slate-600 hover:text-teal-700">System Status</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-6 py-12">
+    <div class="mb-10 text-center">
+      <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold uppercase tracking-wider mb-3">
+        <span class="material-symbols-outlined text-[15px]">verified_user</span>
+        Technical Security Whitepaper
+      </span>
+      <h1 class="text-3xl font-extrabold text-slate-900 font-['Plus_Jakarta_Sans']">Enterprise Security, Encryption & DPDP Standards</h1>
+      <p class="text-xs text-slate-500 mt-2 font-mono">Architecture Specification v2.4 · 256-bit AES & Multi-Tenant Isolation</p>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-8 sm:p-10 shadow-sm space-y-8 text-sm leading-relaxed text-slate-700">
+      
+      <section>
+        <div class="flex items-center gap-2 text-teal-700 font-bold mb-1">
+          <span class="material-symbols-outlined text-[20px]">enhanced_encryption</span>
+          <h2 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans']">1. Cryptographic Data In-Transit and At-Rest</h2>
+        </div>
+        <p>All communication between clinical tablet browsers, cashier desktop desks, and CliniqPay servers is mandated across TLS 1.3 encryption. Passwords and credentials are cryptographically hashed using PBKDF2 with SHA-256 (390,000+ iterations) and salt. Plaintext credentials are never committed, logged, or serialized.</p>
+      </section>
+
+      <section>
+        <div class="flex items-center gap-2 text-teal-700 font-bold mb-1">
+          <span class="material-symbols-outlined text-[20px]">domain</span>
+          <h2 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans']">2. Zero Cross-Tenant Leakage Guarantee</h2>
+        </div>
+        <p>CliniqPay enforces tenant isolation at the ORM layer. Every patient record, prescription, bill item, and financial summary is strictly partitioned by hospital tenant context. Staff session privileges are verified server-side, preventing cross-hospital unauthorized data inspection.</p>
+      </section>
+
+      <section>
+        <div class="flex items-center gap-2 text-teal-700 font-bold mb-1">
+          <span class="material-symbols-outlined text-[20px]">key</span>
+          <h2 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans']">3. Cryptographic Webhook Authentication (YouPI-PG & WhatsApp)</h2>
+        </div>
+        <p>Inbound webhook transactions from payment engines (including YouPI-PG sovereign UPI relays) require constant-time HMAC-SHA256 signature verification over raw request payload bytes. Unsigned or tampered requests are immediately dropped with HTTP 401 Unauthorized.</p>
+      </section>
+
+      <section>
+        <div class="flex items-center gap-2 text-teal-700 font-bold mb-1">
+          <span class="material-symbols-outlined text-[20px]">devices</span>
+          <h2 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans']">4. Patient Counter Tablet Tokenized Security</h2>
+        </div>
+        <p>Patient-facing counter display tablets are protected via cryptographic 64-character entropy display tokens, eliminating authentication credential exposure on public counter touchscreens.</p>
+      </section>
+
+      <section>
+        <div class="flex items-center gap-2 text-teal-700 font-bold mb-1">
+          <span class="material-symbols-outlined text-[20px]">health_and_safety</span>
+          <h2 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans']">5. Incident Reporting & Security Contact</h2>
+        </div>
+        <p>To report a security vulnerability or request an audit verification certificate, please email <a href="mailto:security@cliniqpay.com" class="text-teal-700 font-semibold underline">security@cliniqpay.com</a>.</p>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500">
+    <p>&copy; 2026 CliniqPay Technologies Private Limited. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>
