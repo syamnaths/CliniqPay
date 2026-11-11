@@ -7,6 +7,17 @@
 - **Platform:** Web, intended for desktop and Android tablet browsers. Agreed stack: Python/Django, Django templates, Tailwind CSS v4 and PostgreSQL; Celery and Redis when background work is implemented. One shared, tenant-aware PostgreSQL database with a modular Django application.
 - **Atlas:** `docs/app-map/index.html`; source `docs/app-map/atlas-data.mjs`. 11 maps: 8 delivered, 0 building, 3 planned. Next map to build is `release` (Store & production readiness checklist).
 - **Checks:** Django unit tests for all apps passed (40/40 tests). Atlas build and contract tests passed with zero errors (`npm run atlas:check`).
+  - Mobile Left/Right Viewport Padding Optimization:
+    1. Reduced horizontal gutter padding on mobile viewports (< 640px) from 2rem (32px) down to 1rem (16px) via responsive `.px-margin` rules (`px-4 sm:px-8`).
+    2. Optimized inner card padding on mobile (`p-5 sm:p-8 lg:p-10` on Hero operational cards, `p-5 sm:p-6` on 10-Second Workflow steps) maximizing screen real estate for phones while keeping generous 2rem margins on desktop/tablet.
+  - Landing Page Trial Wiring & Multi-Tier Workflow Alignment:
+    1. Fixed **"Upgrade Your Counter Free"** CTA button in the comparison summary strip to invoke `openEnrollModal()` directly with smooth modal display.
+    2. Connected all 7-day free trial buttons across Hero slides, ROI calculator, and sections so they smoothly trigger the interactive enrollment modal with pre-selected tier (`starter`, `standard`, `enterprise`) or target the on-page setup form.
+    3. Added `id="enrollment-form"` anchor with `scroll-mt-24` on the on-page setup form container so any deep-links scroll cleanly into view without header obstruction.
+    4. Upgraded **"How It Works in 10 Seconds"** from solo-only OPD to a versatile 3-tier presentation:
+       - Step 1 (*Select Service, Rx, or Bed*): OPD consultation token, in-house pharmacy batch dispensing with expiry guard, and daycare/IPD bed admission.
+       - Step 2 (*Dynamic UPI QR & Sound Chime*): Dynamic counter QR scan, 0% MDR bank webhook verification, audio chime confirmation, and cash counter change calculator.
+       - Step 3 (*WhatsApp Bill & Split Ledger*): Instant WhatsApp GST invoice PDF dispatch, housekeeping room turnover triggers, and nightly 8:00 PM doctor share payout ledger.
   - Landing Page Hero & Social Proof Enhancements:
     1. Connected **"Start Your Free Setup"** Hero Form directly to live trial registration (`/enrollment/submit/`) with plan tier dropdown (Starter ₹1,999/mo, Standard ₹3,999/mo, Enterprise ₹6,999/mo) and automated reference token issuance.
     2. Replaced the static side-by-side POS mockup with an interactive 3-slide **Real-World Deployment Hero Carousel** showcasing:
